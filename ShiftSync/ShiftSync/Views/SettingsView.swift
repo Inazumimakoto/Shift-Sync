@@ -596,9 +596,9 @@ struct SettingsView: View {
                     
                     let shifts = try await ShiftWebClient.shared.fetchShiftsForMonths([(year: month.year, month: month.month)])
                     totalFetched += shifts.count
-                    mergedShifts = mergeShifts(existing: mergedShifts, incoming: shifts)
-                    
                     let range = monthRange(year: month.year, month: month.month)
+                    mergedShifts = replaceShifts(existing: mergedShifts, incoming: shifts, range: range)
+                    
                     let result = try CalendarService.shared.syncShifts(
                         shifts,
                         to: calendar,
@@ -678,15 +678,9 @@ struct SettingsView: View {
         return (start: startOfMonth, end: endOfMonth)
     }
     
-    private func mergeShifts(existing: [Shift], incoming: [Shift]) -> [Shift] {
-        var merged: [String: Shift] = [:]
-        for shift in existing {
-            merged[shift.uid] = shift
-        }
-        for shift in incoming {
-            merged[shift.uid] = shift
-        }
-        return Array(merged.values)
+    private func replaceShifts(existing: [Shift], incoming: [Shift], range: (start: Date, end: Date)) -> [Shift] {
+        let kept = existing.filter { $0.start < range.start || $0.start >= range.end }
+        return kept + incoming
     }
     
     private func migrateShifts(from oldCalendarId: String, to newCalendarId: String) {

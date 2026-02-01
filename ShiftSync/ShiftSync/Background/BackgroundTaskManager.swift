@@ -99,9 +99,15 @@ class BackgroundTaskManager {
                 result.deleted += googleResult.deleted
             }
             
-            // 新しいシフトを保存
-            let mergedShifts = mergeShifts(existing: previousShifts, incoming: newShifts)
-            savePreviousShifts(mergedShifts)
+            // 新しいシフトを保存（取得範囲内は置き換え）
+            let syncRange = currentSyncRange()
+            let updatedShifts = replaceShifts(
+                existing: previousShifts,
+                incoming: newShifts,
+                rangeStart: syncRange.start,
+                rangeEnd: syncRange.end
+            )
+            savePreviousShifts(updatedShifts)
             
             // 最終同期日時を更新
             UserDefaults.standard.set(Date(), forKey: "lastSyncDate")
@@ -133,15 +139,18 @@ class BackgroundTaskManager {
         }
     }
     
-    private func mergeShifts(existing: [Shift], incoming: [Shift]) -> [Shift] {
-        var merged: [String: Shift] = [:]
-        for shift in existing {
-            merged[shift.uid] = shift
-        }
-        for shift in incoming {
-            merged[shift.uid] = shift
-        }
-        return merged.values.sorted { $0.start < $1.start }
+    private func replaceShifts(existing: [Shift], incoming: [Shift], rangeStart: Date, rangeEnd: Date) -> [Shift] {
+        let kept = existing.filter { $0.start < rangeStart || $0.start >= rangeEnd }
+        return (kept + incoming).sorted { $0.start < $1.start }
+    }
+    
+    private func currentSyncRange() -> (start: Date, end: Date) {
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfThisMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+        let startOfPrevMonth = calendar.date(byAdding: .month, value: -1, to: startOfThisMonth)!
+        let startOfMonthAfterNext = calendar.date(byAdding: .month, value: 2, to: startOfThisMonth)!
+        return (start: startOfPrevMonth, end: startOfMonthAfterNext)
     }
     
     private func detectChanges(previous: [Shift], new: [Shift]) -> ShiftChanges {
@@ -172,22 +181,62 @@ class BackgroundTaskManager {
         let calendar = Calendar.current
         let now = Date()
         let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+
+        // 削除+追加のペアを「変更」として扱う（同日・同店舗）
+        var added = changes.added
+        var removed = changes.removed
+        var modified = changes.modified
         
-        for shift in changes.added {
+        if !added.isEmpty && !removed.isEmpty {
+            var matchedAdded: Set<Int> = []
+            var matchedRemoved: Set<Int> = []
+            
+            for (removedIndex, removedShift) in removed.enumerated() {
+                for (addedIndex, addedShift) in added.enumerated() {
+                    guard !matchedAdded.contains(addedIndex),
+                          !matchedRemoved.contains(removedIndex) else { continue }
+                    
+                    let sameDay = calendar.isDate(removedShift.start, inSameDayAs: addedShift.start)
+                    let sameLocation = removedShift.location.trimmingCharacters(in: .whitespacesAndNewlines)
+                        == addedShift.location.trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    if sameDay && sameLocation {
+                        matchedRemoved.insert(removedIndex)
+                        matchedAdded.insert(addedIndex)
+                        modified.append((old: removedShift, new: addedShift))
+                        break
+                    }
+                }
+            }
+            
+            if !matchedAdded.isEmpty {
+                added = added.enumerated()
+                    .filter { !matchedAdded.contains($0.offset) }
+                    .map { $0.element }
+            }
+            
+            if !matchedRemoved.isEmpty {
+                removed = removed.enumerated()
+                    .filter { !matchedRemoved.contains($0.offset) }
+                    .map { $0.element }
+            }
+        }
+        
+        for shift in added {
             // 今月以降のシフトのみ通知
             if shift.start >= startOfMonth {
                 NotificationManager.shared.sendShiftAddedNotification(shift)
             }
         }
         
-        for (old, new) in changes.modified {
+        for (old, new) in modified {
             // 今月以降のシフトのみ通知
             if new.start >= startOfMonth {
                 NotificationManager.shared.sendShiftChangedNotification(old: old, new: new)
             }
         }
         
-        for shift in changes.removed {
+        for shift in removed {
             // 今月以降のシフトのみ通知
             if shift.start >= startOfMonth {
                 NotificationManager.shared.sendShiftRemovedNotification(shift)

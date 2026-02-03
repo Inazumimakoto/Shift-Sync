@@ -303,6 +303,14 @@ struct ShiftWebWebView: UIViewRepresentable {
             Task { @MainActor in
                 self.parent.isLoading = false
             }
+
+            // User-Agentを取得して保存
+            webView.evaluateJavaScript("navigator.userAgent") { (result, error) in
+                if let userAgent = result as? String {
+                    print("Captured User-Agent: \(userAgent)")
+                    UserDefaults.standard.set(userAgent, forKey: "UserAgent")
+                }
+            }
             
             guard let url = webView.url?.absoluteString else { return }
             print("Navigation finished: \(url)")

@@ -13,6 +13,10 @@ struct ShiftSyncApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onAppear {
+                    // アプリ起動時にUser-Agentを更新（裏でこっそり行う）
+                    UserAgentFetcher.shared.fetchUserAgentIfNeeded()
+                }
                 .environmentObject(appState)
                 .onAppear {
                     restoreGoogleSignIn()

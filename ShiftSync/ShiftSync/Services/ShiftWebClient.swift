@@ -21,6 +21,10 @@ class ShiftWebClient {
         self.session = URLSession(configuration: config)
     }
     
+    private var userAgent: String {
+        UserDefaults.standard.string(forKey: "UserAgent") ?? "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+    }
+    
     /// ShiftWebにログイン
     /// Go版: loginShiftWeb (main.go:669-707)
     func login(id: String, password: String) async throws {
@@ -35,6 +39,7 @@ class ShiftWebClient {
         request.setValue("XMLHttpRequest", forHTTPHeaderField: "X-Requested-With")
         request.setValue(baseURL, forHTTPHeaderField: "Origin")
         request.setValue("\(baseURL)/login.php?err=1", forHTTPHeaderField: "Referer")
+        request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         
         let body = "id=\(id.urlEncoded)&password=\(password.urlEncoded)&savelogin=1"
         request.httpBody = body.data(using: .utf8)
@@ -62,6 +67,7 @@ class ShiftWebClient {
         
         var request = URLRequest(url: components.url!)
         request.setValue(shiftURL, forHTTPHeaderField: "Referer")
+        request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         
         let (data, response) = try await session.data(for: request)
         

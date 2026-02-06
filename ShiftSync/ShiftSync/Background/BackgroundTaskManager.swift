@@ -50,7 +50,7 @@ class BackgroundTaskManager {
                 task.setTaskCompleted(success: true)
                 
                 // 変更があれば通知
-                if result.hasChanges {
+                if result.hasNotifiableChanges {
                     NotificationManager.shared.sendSyncCompleteNotification(result: result)
                 }
             } catch {
@@ -82,21 +82,28 @@ class BackgroundTaskManager {
             
             // カレンダーに同期
             var result = SyncResult()
+            let iCloudEnabled = UserDefaults.standard.object(forKey: "iCloudEnabled") as? Bool ?? true
+            let googleEnabled = UserDefaults.standard.bool(forKey: "googleEnabled")
             
             // iCloud カレンダー同期
-            if CalendarService.shared.hasAccess,
+            if iCloudEnabled,
+               CalendarService.shared.hasAccess,
                let calendarID = UserDefaults.standard.string(forKey: "selectedICloudCalendar"),
                let calendar = CalendarService.shared.getCalendars().first(where: { $0.calendarIdentifier == calendarID }) {
                 result = try CalendarService.shared.syncShifts(newShifts, to: calendar)
             }
             
             // Google カレンダー同期
-            if GoogleCalendarService.shared.isSignedIn,
+            if googleEnabled,
+               GoogleCalendarService.shared.isSignedIn,
                let googleCalendarID = UserDefaults.standard.string(forKey: "selectedGoogleCalendar") {
                 let googleResult = try await GoogleCalendarService.shared.syncShifts(newShifts, to: googleCalendarID)
                 result.added += googleResult.added
                 result.updated += googleResult.updated
                 result.deleted += googleResult.deleted
+                result.addedShifts = mergeUniqueShifts(result.addedShifts, googleResult.addedShifts)
+                result.updatedShifts = mergeUniqueShifts(result.updatedShifts, googleResult.updatedShifts)
+                result.deletedShifts = mergeUniqueShifts(result.deletedShifts, googleResult.deletedShifts)
             }
             
             // 新しいシフトを保存（取得範囲内は置き換え）
@@ -151,6 +158,17 @@ class BackgroundTaskManager {
         let startOfPrevMonth = calendar.date(byAdding: .month, value: -1, to: startOfThisMonth)!
         let startOfMonthAfterNext = calendar.date(byAdding: .month, value: 2, to: startOfThisMonth)!
         return (start: startOfPrevMonth, end: startOfMonthAfterNext)
+    }
+    
+    private func mergeUniqueShifts(_ existing: [Shift], _ incoming: [Shift]) -> [Shift] {
+        var byUID: [String: Shift] = [:]
+        for shift in existing {
+            byUID[shift.uid] = shift
+        }
+        for shift in incoming {
+            byUID[shift.uid] = shift
+        }
+        return byUID.values.sorted { $0.start < $1.start }
     }
     
     private func detectChanges(previous: [Shift], new: [Shift]) -> ShiftChanges {

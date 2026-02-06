@@ -68,9 +68,8 @@ class CalendarService {
     /// シフトをカレンダーに同期
     /// Go版: syncShiftsToCalDAV (main.go:1058-1148) のロジックを移植
     func syncShifts(_ shifts: [Shift], to calendar: EKCalendar) throws -> SyncResult {
-        let startDate = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
-        let endDate = Calendar.current.date(byAdding: .month, value: 3, to: Date())!
-        return try syncShifts(shifts, to: calendar, searchStart: startDate, searchEnd: endDate)
+        let range = defaultSyncRange()
+        return try syncShifts(shifts, to: calendar, searchStart: range.start, searchEnd: range.end)
     }
     
     /// 指定範囲で既存イベントを検索して同期
@@ -78,7 +77,10 @@ class CalendarService {
         var result = SyncResult()
         
         // 既存のshift-*イベントを取得
-        let existingEvents = getExistingShiftEvents(in: calendar, startDate: searchStart, endDate: searchEnd)
+        var existingEvents = getExistingShiftEvents(in: calendar, startDate: searchStart, endDate: searchEnd)
+        
+        // 同一UIDの重複イベントを整理してから同期する
+        existingEvents = try deduplicateShiftEvents(existingEvents)
         let existingUIDs = Set(existingEvents.compactMap { extractShiftUID(from: $0) })
         
         // 必要なUIDのセット
@@ -132,6 +134,11 @@ class CalendarService {
             }
         }
         
+        // 同時実行で重複が紛れたケースも最終的に自己修復
+        _ = try deduplicateShiftEvents(
+            getExistingShiftEvents(in: calendar, startDate: searchStart, endDate: searchEnd)
+        )
+        
         return result
     }
     
@@ -164,9 +171,8 @@ class CalendarService {
     // MARK: - Private Helpers
     
     private func getExistingShiftEvents(in calendar: EKCalendar) -> [EKEvent] {
-        let startDate = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
-        let endDate = Calendar.current.date(byAdding: .month, value: 3, to: Date())!
-        return getExistingShiftEvents(in: calendar, startDate: startDate, endDate: endDate)
+        let range = defaultSyncRange()
+        return getExistingShiftEvents(in: calendar, startDate: range.start, endDate: range.end)
     }
     
     private func getExistingShiftEvents(in calendar: EKCalendar, startDate: Date, endDate: Date) -> [EKEvent] {
@@ -180,6 +186,65 @@ class CalendarService {
         return eventStore.events(matching: predicate).filter { event in
             event.notes?.contains("shift-uid:") == true
         }
+    }
+    
+    private func defaultSyncRange() -> (start: Date, end: Date) {
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfThisMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+        let startOfPrevMonth = calendar.date(byAdding: .month, value: -1, to: startOfThisMonth)!
+        let startOfMonthAfterNext = calendar.date(byAdding: .month, value: 2, to: startOfThisMonth)!
+        return (start: startOfPrevMonth, end: startOfMonthAfterNext)
+    }
+    
+    /// 同じshift-uidを持つ重複イベントを削除し、ユニークな一覧を返す
+    private func deduplicateShiftEvents(_ events: [EKEvent]) throws -> [EKEvent] {
+        var selectedByUID: [String: EKEvent] = [:]
+        var duplicatesToDelete: [EKEvent] = []
+        
+        for event in events {
+            guard let uid = extractShiftUID(from: event) else { continue }
+            
+            if let existing = selectedByUID[uid] {
+                let preferred = preferredEvent(existing, comparedTo: event)
+                let obsolete = (preferred === existing) ? event : existing
+                selectedByUID[uid] = preferred
+                duplicatesToDelete.append(obsolete)
+            } else {
+                selectedByUID[uid] = event
+            }
+        }
+        
+        for duplicate in duplicatesToDelete {
+            try eventStore.remove(duplicate, span: .thisEvent)
+        }
+        
+        return selectedByUID.values.sorted { $0.startDate < $1.startDate }
+    }
+    
+    /// 重複イベントから残す1件を選ぶ
+    private func preferredEvent(_ lhs: EKEvent, comparedTo rhs: EKEvent) -> EKEvent {
+        let lhsModified = lhs.lastModifiedDate ?? .distantPast
+        let rhsModified = rhs.lastModifiedDate ?? .distantPast
+        if lhsModified != rhsModified {
+            return lhsModified > rhsModified ? lhs : rhs
+        }
+        
+        let lhsScore = eventQualityScore(lhs)
+        let rhsScore = eventQualityScore(rhs)
+        if lhsScore != rhsScore {
+            return lhsScore >= rhsScore ? lhs : rhs
+        }
+        
+        return lhs.startDate <= rhs.startDate ? lhs : rhs
+    }
+    
+    private func eventQualityScore(_ event: EKEvent) -> Int {
+        var score = 0
+        if let title = event.title, !title.isEmpty { score += 1 }
+        if let location = event.location, !location.isEmpty { score += 1 }
+        if event.startDate < event.endDate { score += 1 }
+        return score
     }
     
     private func extractShiftUID(from event: EKEvent) -> String? {
@@ -227,6 +292,22 @@ struct SyncResult {
         added > 0 || updated > 0 || deleted > 0
     }
     
+    /// 今月以降のシフト変更があるか
+    var hasNotifiableChanges: Bool {
+        let future = futureChanges
+        if !future.added.isEmpty || !future.updated.isEmpty || !future.deleted.isEmpty {
+            return true
+        }
+        
+        // iCloudの詳細が存在するのに今月以降が空なら通知しない
+        if !addedShifts.isEmpty || !updatedShifts.isEmpty || !deletedShifts.isEmpty {
+            return false
+        }
+        
+        // Google同期など詳細がない場合は件数ベースで通知
+        return hasChanges
+    }
+    
     var summary: String {
         var parts: [String] = []
         if added > 0 { parts.append("追加: \(added)件") }
@@ -235,18 +316,24 @@ struct SyncResult {
         return parts.isEmpty ? "変更なし" : parts.joined(separator: ", ")
     }
     
+    /// 通知に表示する本文
+    var notificationBody: String {
+        let detailed = detailedSummary
+        if detailed != "変更なし" {
+            return detailed
+        }
+        if hasNotifiableChanges {
+            return summary
+        }
+        return "変更なし"
+    }
+    
     var detailedSummary: String {
         var lines: [String] = []
         
-        // 今月の初日を計算（先月分のシフトを通知から除外するため）
-        let calendar = Calendar.current
-        let now = Date()
-        let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
-        
-        // 今月以降のシフトのみフィルタ
-        let futureAddedShifts = addedShifts.filter { $0.start >= startOfMonth }
-        let futureUpdatedShifts = updatedShifts.filter { $0.start >= startOfMonth }
-        let futureDeletedShifts = deletedShifts.filter { $0.start >= startOfMonth }
+        let futureAddedShifts = futureChanges.added
+        let futureUpdatedShifts = futureChanges.updated
+        let futureDeletedShifts = futureChanges.deleted
         
         // 追加
         if !futureAddedShifts.isEmpty {
@@ -272,5 +359,18 @@ struct SyncResult {
         }
         
         return lines.isEmpty ? "変更なし" : lines.joined(separator: "\n")
+    }
+    
+    private var futureChanges: (added: [Shift], updated: [Shift], deleted: [Shift]) {
+        // 今月の初日を計算（先月分のシフトを通知から除外するため）
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+        
+        return (
+            added: addedShifts.filter { $0.start >= startOfMonth },
+            updated: updatedShifts.filter { $0.start >= startOfMonth },
+            deleted: deletedShifts.filter { $0.start >= startOfMonth }
+        )
     }
 }

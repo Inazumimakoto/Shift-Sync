@@ -110,6 +110,19 @@ class GoogleCalendarService {
         }
         
         for event in toDelete {
+            if let uid = extractShiftUID(from: event),
+               let startDate = eventStartDate(event),
+               let endDate = eventEndDate(event) {
+                let deletedShift = Shift(
+                    uid: uid,
+                    title: event.summary ?? "バイト",
+                    start: startDate,
+                    end: endDate,
+                    location: event.location ?? "",
+                    memo: ""
+                )
+                result.deletedShifts.append(deletedShift)
+            }
             try await deleteEvent(eventId: event.id, calendarId: calendarId, token: token)
             result.deleted += 1
         }
@@ -117,15 +130,19 @@ class GoogleCalendarService {
         // 追加・更新するシフト
         for shift in shifts {
             if existingUIDs.contains(shift.uid) {
-                // 既存イベントを更新
+                // 既存イベントを更新（内容が変わった場合のみ）
                 if let existingEvent = existingEvents.first(where: { extractShiftUID(from: $0) == shift.uid }) {
-                    try await updateEvent(eventId: existingEvent.id, shift: shift, calendarId: calendarId, token: token)
-                    result.updated += 1
+                    if needsUpdate(existingEvent, with: shift) {
+                        try await updateEvent(eventId: existingEvent.id, shift: shift, calendarId: calendarId, token: token)
+                        result.updated += 1
+                        result.updatedShifts.append(shift)
+                    }
                 }
             } else {
                 // 新規イベント作成
                 try await createEvent(shift: shift, calendarId: calendarId, token: token)
                 result.added += 1
+                result.addedShifts.append(shift)
             }
         }
         
@@ -148,9 +165,9 @@ class GoogleCalendarService {
     }
     
     private func getExistingShiftEvents(calendarId: String, token: String) async throws -> [GoogleEvent] {
-        let now = Date()
-        let startDate = Calendar.current.date(byAdding: .month, value: -1, to: now)!
-        let endDate = Calendar.current.date(byAdding: .month, value: 3, to: now)!
+        let range = defaultSyncRange()
+        let startDate = range.start
+        let endDate = range.end
         
         let formatter = ISO8601DateFormatter()
         let timeMin = formatter.string(from: startDate)
@@ -174,6 +191,15 @@ class GoogleCalendarService {
         return result.items.filter { $0.description?.contains("shift-uid:") == true }
     }
     
+    private func defaultSyncRange() -> (start: Date, end: Date) {
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfThisMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+        let startOfPrevMonth = calendar.date(byAdding: .month, value: -1, to: startOfThisMonth)!
+        let startOfMonthAfterNext = calendar.date(byAdding: .month, value: 2, to: startOfThisMonth)!
+        return (start: startOfPrevMonth, end: startOfMonthAfterNext)
+    }
+    
     private func extractShiftUID(from event: GoogleEvent) -> String? {
         guard let description = event.description,
               let range = description.range(of: "shift-uid:") else { return nil }
@@ -183,6 +209,31 @@ class GoogleCalendarService {
             return String(remaining[..<end])
         }
         return String(remaining)
+    }
+    
+    private func needsUpdate(_ event: GoogleEvent, with shift: Shift) -> Bool {
+        if event.summary != shift.title { return true }
+        if (event.location ?? "") != shift.location { return true }
+        
+        guard let startDate = eventStartDate(event),
+              let endDate = eventEndDate(event) else {
+            return true
+        }
+        
+        if startDate != shift.start { return true }
+        if endDate != shift.end { return true }
+        return false
+    }
+    
+    private func eventStartDate(_ event: GoogleEvent) -> Date? {
+        guard let start = event.start else { return nil }
+        if let dateTime = start.dateTime {
+            return parseGoogleDateTime(dateTime)
+        }
+        if let date = start.date {
+            return parseGoogleDate(date)
+        }
+        return nil
     }
     
     private func eventEndDate(_ event: GoogleEvent) -> Date? {
@@ -326,6 +377,7 @@ struct EventListResponse: Codable {
 struct GoogleEvent: Codable {
     let id: String
     let summary: String?
+    let location: String?
     let description: String?
     let start: GoogleEventDateTime?
     let end: GoogleEventDateTime?

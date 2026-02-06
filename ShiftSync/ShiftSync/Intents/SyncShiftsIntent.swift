@@ -27,7 +27,7 @@ struct SyncShiftsIntent: AppIntent {
             let result = try await BackgroundTaskManager.shared.performSync(source: .automation)
             
             // 変更があれば通知を送信
-            if result.hasChanges {
+            if result.hasNotifiableChanges {
                 await MainActor.run {
                     NotificationManager.shared.sendSyncCompleteNotification(result: result)
                 }

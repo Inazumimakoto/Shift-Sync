@@ -51,7 +51,7 @@ struct ShiftSyncApp: App {
             print("URL Scheme同期完了: 追加=\(result.added), 更新=\(result.updated), 削除=\(result.deleted)")
             
             // 変更があれば通知を送信
-            if result.hasChanges {
+            if result.hasNotifiableChanges {
                 NotificationManager.shared.sendSyncCompleteNotification(result: result)
             }
         } catch {

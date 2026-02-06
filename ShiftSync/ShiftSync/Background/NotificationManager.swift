@@ -52,7 +52,7 @@ class NotificationManager {
     func sendSyncCompleteNotification(result: SyncResult) {
         let content = UNMutableNotificationContent()
         content.title = "✅ シフト同期完了"
-        content.body = result.detailedSummary
+        content.body = result.notificationBody
         content.sound = .default
         
         scheduleNotification(content: content, identifier: "sync-complete-\(Date().timeIntervalSince1970)")

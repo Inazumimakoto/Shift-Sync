@@ -42,7 +42,6 @@ struct ShiftSyncApp: App {
         // ShiftSync URL Scheme (shiftsync://sync)
         if url.scheme == "shiftsync" {
             if url.host == "sync" || url.path == "/sync" || url.host == nil {
-                // 同期をトリガー
                 Task {
                     await performSyncFromURL()
                 }

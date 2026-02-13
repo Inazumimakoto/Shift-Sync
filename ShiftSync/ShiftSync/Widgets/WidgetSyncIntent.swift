@@ -2,7 +2,7 @@ import AppIntents
 import WidgetKit
 import Foundation
 
-/// ウィジェットから直接シフト取得を実行するIntent
+/// ウィジェットから直接シフト取得を実行するIntent（アプリは開かない）
 struct WidgetSyncIntent: AppIntent {
     static var title: LocalizedStringResource = "同期"
     static var description = IntentDescription("ShiftWebから最新のシフトを取得します")
@@ -14,7 +14,7 @@ struct WidgetSyncIntent: AppIntent {
         do {
             let credentials = try KeychainService.shared.getShiftWebCredentials()
             try await ShiftWebClient.shared.login(id: credentials.id, password: credentials.password)
-            let shifts = try await fetchWidgetShifts()
+            let shifts = try await ShiftWebClient.shared.fetchCurrentAndNextMonthShifts()
 
             SharedStorage.saveShifts(shifts)
             SharedStorage.saveLastSyncDate(Date())
@@ -25,20 +25,5 @@ struct WidgetSyncIntent: AppIntent {
             // ボタン操作時は静かに失敗させる（アプリを開かない）
             return .result()
         }
-    }
-
-    private func fetchWidgetShifts() async throws -> [Shift] {
-        let calendar = Calendar.current
-        let now = Date()
-        let thisYear = calendar.component(.year, from: now)
-        let thisMonth = calendar.component(.month, from: now)
-
-        let nextMonth = thisMonth == 12 ? 1 : thisMonth + 1
-        let nextYear = thisMonth == 12 ? thisYear + 1 : thisYear
-
-        return try await ShiftWebClient.shared.fetchShiftsForMonths([
-            (year: thisYear, month: thisMonth),
-            (year: nextYear, month: nextMonth)
-        ])
     }
 }

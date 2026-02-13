@@ -195,12 +195,8 @@ struct ContentView: View {
                 let result = try await BackgroundTaskManager.shared.performSync(source: .manual)
                 
                 await MainActor.run {
-                    // シフトを更新
-                    if let data = UserDefaults.standard.data(forKey: "savedShifts"),
-                       let shifts = try? JSONDecoder().decode([Shift].self, from: data) {
-                        appState.shifts = shifts
-                    }
-                    appState.lastSyncDate = Date()
+                    appState.shifts = SharedStorage.loadShifts()
+                    appState.lastSyncDate = SharedStorage.loadLastSyncDate()
                     isSyncing = false
                 }
             } catch {
@@ -231,11 +227,8 @@ struct ContentView: View {
     }
     
     private func loadShiftsFromStorage() {
-        if let data = UserDefaults.standard.data(forKey: "savedShifts"),
-           let shifts = try? JSONDecoder().decode([Shift].self, from: data) {
-            appState.shifts = shifts
-        }
-        if let lastSync = UserDefaults.standard.object(forKey: "lastSyncDate") as? Date {
+        appState.shifts = SharedStorage.loadShifts()
+        if let lastSync = SharedStorage.loadLastSyncDate() {
             appState.lastSyncDate = lastSync
         }
     }

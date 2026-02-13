@@ -1,6 +1,9 @@
 import Foundation
 import BackgroundTasks
 import EventKit
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 /// バックグラウンドでのシフト同期を管理
 class BackgroundTaskManager {
@@ -117,10 +120,15 @@ class BackgroundTaskManager {
             savePreviousShifts(updatedShifts)
             
             // 最終同期日時を更新
-            UserDefaults.standard.set(Date(), forKey: "lastSyncDate")
+            let lastSyncDate = Date()
+            SharedStorage.saveLastSyncDate(lastSyncDate)
             
             // 同期履歴を記録
             SyncHistoryManager.shared.logSuccess(source: source, result: result)
+
+#if canImport(WidgetKit)
+            WidgetCenter.shared.reloadAllTimelines()
+#endif
             
             return result
         } catch {
@@ -133,17 +141,11 @@ class BackgroundTaskManager {
     // MARK: - Change Detection
     
     private func loadPreviousShifts() -> [Shift] {
-        guard let data = UserDefaults.standard.data(forKey: "savedShifts"),
-              let shifts = try? JSONDecoder().decode([Shift].self, from: data) else {
-            return []
-        }
-        return shifts
+        SharedStorage.loadShifts()
     }
     
     private func savePreviousShifts(_ shifts: [Shift]) {
-        if let data = try? JSONEncoder().encode(shifts) {
-            UserDefaults.standard.set(data, forKey: "savedShifts")
-        }
+        SharedStorage.saveShifts(shifts)
     }
     
     private func replaceShifts(existing: [Shift], incoming: [Shift], rangeStart: Date, rangeEnd: Date) -> [Shift] {

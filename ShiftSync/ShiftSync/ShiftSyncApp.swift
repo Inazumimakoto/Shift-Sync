@@ -1,6 +1,9 @@
 import SwiftUI
 import Combine
 import GoogleSignIn
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 @main
 struct ShiftSyncApp: App {
@@ -8,6 +11,8 @@ struct ShiftSyncApp: App {
     
     init() {
         BackgroundTaskManager.shared.registerBackgroundTask()
+        SharedStorage.migrateToSharedIfNeeded()
+        KeychainService.shared.migrateLegacyCredentialsToShared()
     }
     
     var body: some Scene {
@@ -54,6 +59,10 @@ struct ShiftSyncApp: App {
             if result.hasNotifiableChanges {
                 NotificationManager.shared.sendSyncCompleteNotification(result: result)
             }
+
+#if canImport(WidgetKit)
+            WidgetCenter.shared.reloadAllTimelines()
+#endif
         } catch {
             print("URL Scheme同期エラー: \(error)")
             NotificationManager.shared.sendSyncErrorNotification(error: error)
@@ -98,15 +107,12 @@ class AppState: ObservableObject {
         selectedICloudCalendar = UserDefaults.standard.string(forKey: "selectedICloudCalendar")
         selectedGoogleCalendar = UserDefaults.standard.string(forKey: "selectedGoogleCalendar")
         
-        if let lastSync = UserDefaults.standard.object(forKey: "lastSyncDate") as? Date {
+        if let lastSync = SharedStorage.loadLastSyncDate() {
             lastSyncDate = lastSync
         }
         
         // 保存されたシフトを読み込み
-        if let data = UserDefaults.standard.data(forKey: "savedShifts"),
-           let decoded = try? JSONDecoder().decode([Shift].self, from: data) {
-            shifts = decoded
-        }
+        shifts = SharedStorage.loadShifts()
         
         // Google Sign-In状態確認
         isGoogleSignedIn = GoogleCalendarService.shared.isSignedIn
@@ -114,10 +120,9 @@ class AppState: ObservableObject {
     
     func saveShifts(_ shifts: [Shift]) {
         self.shifts = shifts
-        if let encoded = try? JSONEncoder().encode(shifts) {
-            UserDefaults.standard.set(encoded, forKey: "savedShifts")
-        }
-        lastSyncDate = Date()
-        UserDefaults.standard.set(lastSyncDate, forKey: "lastSyncDate")
+        SharedStorage.saveShifts(shifts)
+        let now = Date()
+        lastSyncDate = now
+        SharedStorage.saveLastSyncDate(now)
     }
 }

@@ -30,6 +30,17 @@
 		0EACACB02F0FE440005E1825 /* Media.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0EACACAF2F0FE440005E1825 /* Media.xcassets */; };
 		0EACACB32F11001005E1825 /* SyncLogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACACB22F11001005E1825 /* SyncLogEntry.swift */; };
 		0EACACB52F11002005E1825 /* SyncHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACACB42F11002005E1825 /* SyncHistoryManager.swift */; };
+		1A1B1C1D2F40000100AA0001 /* SharedStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1B1C1D2F40000100AA0011 /* SharedStorage.swift */; };
+		1A1B1C1D2F40000100AA0002 /* ShiftSyncWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1B1C1D2F40000100AA0015 /* ShiftSyncWidgetBundle.swift */; };
+		1A1B1C1D2F40000100AA0003 /* ShiftSyncSmallWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1B1C1D2F40000100AA0016 /* ShiftSyncSmallWidget.swift */; };
+		1A1B1C1D2F40000100AA0004 /* SharedStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1B1C1D2F40000100AA0011 /* SharedStorage.swift */; };
+		1A1B1C1D2F40000100AA0005 /* Shift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABAC2F0E8D6C005E1825 /* Shift.swift */; };
+		1A1B1C1D2F40000100AA0006 /* ShiftSyncWidgetsExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 1A1B1C1D2F40000100AA0010 /* ShiftSyncWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1A1B1C1D2F50000100AA0001 /* WidgetSyncIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1B1C1D2F50000100AA0017 /* WidgetSyncIntent.swift */; };
+		1A1B1C1D2F50000100AA0002 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABB12F0E8D6C005E1825 /* KeychainService.swift */; };
+		1A1B1C1D2F50000100AA0003 /* ShiftWebClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABAE2F0E8D6C005E1825 /* ShiftWebClient.swift */; };
+		1A1B1C1D2F50000100AA0004 /* ShiftParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABB22F0E8D6C005E1825 /* ShiftParser.swift */; };
+		1A1B1C1D2F50000100AA0005 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 0EACABC92F0E8DAE005E1825 /* SwiftSoup */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -55,7 +66,39 @@
 		0EACACAF2F0FE440005E1825 /* Media.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Media.xcassets; sourceTree = "<group>"; };
 		0EACACB22F11001005E1825 /* SyncLogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncLogEntry.swift; sourceTree = "<group>"; };
 		0EACACB42F11002005E1825 /* SyncHistoryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncHistoryManager.swift; sourceTree = "<group>"; };
+		1A1B1C1D2F40000100AA0010 /* ShiftSyncWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShiftSyncWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A1B1C1D2F40000100AA0011 /* SharedStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedStorage.swift; sourceTree = "<group>"; };
+		1A1B1C1D2F40000100AA0012 /* ShiftSync.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShiftSync.entitlements; sourceTree = "<group>"; };
+		1A1B1C1D2F40000100AA0013 /* ShiftSyncWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ShiftSyncWidgetExtension.entitlements; sourceTree = "<group>"; };
+		1A1B1C1D2F40000100AA0014 /* ShiftSyncWidgetExtension-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "ShiftSyncWidgetExtension-Info.plist"; sourceTree = "<group>"; };
+		1A1B1C1D2F40000100AA0015 /* ShiftSyncWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftSyncWidgetBundle.swift; sourceTree = "<group>"; };
+		1A1B1C1D2F40000100AA0016 /* ShiftSyncSmallWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftSyncSmallWidget.swift; sourceTree = "<group>"; };
+		1A1B1C1D2F50000100AA0017 /* WidgetSyncIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSyncIntent.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXContainerItemProxy section */
+		1A1B1C1D2F40000100AA0050 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0EACAB922F0E8CC1005E1825 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1A1B1C1D2F40000100AA0040;
+			remoteInfo = ShiftSyncWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		1A1B1C1D2F40000100AA0030 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				1A1B1C1D2F40000100AA0006 /* ShiftSyncWidgetsExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		0EACAB972F0E8CC1005E1825 /* Frameworks */ = {
@@ -65,6 +108,14 @@
 				0EACABCF2F0E8DCC005E1825 /* GoogleSignInSwift in Frameworks */,
 				0EACABCA2F0E8DAE005E1825 /* SwiftSoup in Frameworks */,
 				0EACABCD2F0E8DCC005E1825 /* GoogleSignIn in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A1B1C1D2F40000100AA0031 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A1B1C1D2F50000100AA0005 /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,6 +134,10 @@
 				0EACACAF2F0FE440005E1825 /* Media.xcassets */,
 				0EACABB92F0E8D6C005E1825 /* Views */,
 				0EACABD42F0F0000005E1825 /* Intents */,
+				1A1B1C1D2F40000100AA0020 /* Widgets */,
+				1A1B1C1D2F40000100AA0014 /* ShiftSyncWidgetExtension-Info.plist */,
+				1A1B1C1D2F40000100AA0012 /* ShiftSync.entitlements */,
+				1A1B1C1D2F40000100AA0013 /* ShiftSyncWidgetExtension.entitlements */,
 			);
 			sourceTree = "<group>";
 		};
@@ -90,6 +145,7 @@
 			isa = PBXGroup;
 			children = (
 				0EACAB9A2F0E8CC1005E1825 /* ShiftSync.app */,
+				1A1B1C1D2F40000100AA0010 /* ShiftSyncWidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -122,6 +178,7 @@
 				0EACABB02F0E8D6C005E1825 /* ICSExporter.swift */,
 				0EACABB12F0E8D6C005E1825 /* KeychainService.swift */,
 				0EACACB42F11002005E1825 /* SyncHistoryManager.swift */,
+				1A1B1C1D2F40000100AA0011 /* SharedStorage.swift */,
 				0EACABB22F0E8D6C005E1825 /* ShiftParser.swift */,
 			);
 			path = Services;
@@ -147,6 +204,16 @@
 			path = Intents;
 			sourceTree = "<group>";
 		};
+		1A1B1C1D2F40000100AA0020 /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				1A1B1C1D2F40000100AA0015 /* ShiftSyncWidgetBundle.swift */,
+				1A1B1C1D2F40000100AA0016 /* ShiftSyncSmallWidget.swift */,
+				1A1B1C1D2F50000100AA0017 /* WidgetSyncIntent.swift */,
+			);
+			path = Widgets;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -157,10 +224,12 @@
 				0EACAB962F0E8CC1005E1825 /* Sources */,
 				0EACAB972F0E8CC1005E1825 /* Frameworks */,
 				0EACAB982F0E8CC1005E1825 /* Resources */,
+				1A1B1C1D2F40000100AA0030 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				1A1B1C1D2F40000100AA0051 /* PBXTargetDependency */,
 			);
 			name = ShiftSync;
 			packageProductDependencies = (
@@ -171,6 +240,26 @@
 			productName = ShiftSync;
 			productReference = 0EACAB9A2F0E8CC1005E1825 /* ShiftSync.app */;
 			productType = "com.apple.product-type.application";
+		};
+		1A1B1C1D2F40000100AA0040 /* ShiftSyncWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A1B1C1D2F40000100AA0062 /* Build configuration list for PBXNativeTarget "ShiftSyncWidgetsExtension" */;
+			buildPhases = (
+				1A1B1C1D2F40000100AA0033 /* Sources */,
+				1A1B1C1D2F40000100AA0031 /* Frameworks */,
+				1A1B1C1D2F40000100AA0032 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ShiftSyncWidgetsExtension;
+			packageProductDependencies = (
+				0EACABC92F0E8DAE005E1825 /* SwiftSoup */,
+			);
+			productName = ShiftSyncWidgetsExtension;
+			productReference = 1A1B1C1D2F40000100AA0010 /* ShiftSyncWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -183,6 +272,9 @@
 				LastUpgradeCheck = 2610;
 				TargetAttributes = {
 					0EACAB992F0E8CC1005E1825 = {
+						CreatedOnToolsVersion = 26.1;
+					};
+					1A1B1C1D2F40000100AA0040 = {
 						CreatedOnToolsVersion = 26.1;
 					};
 				};
@@ -206,6 +298,7 @@
 			projectRoot = "";
 			targets = (
 				0EACAB992F0E8CC1005E1825 /* ShiftSync */,
+				1A1B1C1D2F40000100AA0040 /* ShiftSyncWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -216,6 +309,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				0EACACB02F0FE440005E1825 /* Media.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1A1B1C1D2F40000100AA0032 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,6 +340,7 @@
 				0EACABC32F0E8D6C005E1825 /* ShiftWebLoginView.swift in Sources */,
 				0EACABC42F0E8D6C005E1825 /* KeychainService.swift in Sources */,
 				0EACACB52F11002005E1825 /* SyncHistoryManager.swift in Sources */,
+				1A1B1C1D2F40000100AA0001 /* SharedStorage.swift in Sources */,
 				0EACABC52F0E8D6C005E1825 /* BackgroundTaskManager.swift in Sources */,
 				0EACABC62F0E8D6C005E1825 /* CalendarService.swift in Sources */,
 				0EACABD02F0E8E00005E1825 /* GoogleCalendarService.swift in Sources */,
@@ -248,7 +349,30 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1A1B1C1D2F40000100AA0033 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A1B1C1D2F40000100AA0002 /* ShiftSyncWidgetBundle.swift in Sources */,
+				1A1B1C1D2F40000100AA0003 /* ShiftSyncSmallWidget.swift in Sources */,
+				1A1B1C1D2F40000100AA0004 /* SharedStorage.swift in Sources */,
+				1A1B1C1D2F40000100AA0005 /* Shift.swift in Sources */,
+				1A1B1C1D2F50000100AA0001 /* WidgetSyncIntent.swift in Sources */,
+				1A1B1C1D2F50000100AA0002 /* KeychainService.swift in Sources */,
+				1A1B1C1D2F50000100AA0003 /* ShiftWebClient.swift in Sources */,
+				1A1B1C1D2F50000100AA0004 /* ShiftParser.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1A1B1C1D2F40000100AA0051 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1A1B1C1D2F40000100AA0040 /* ShiftSyncWidgetsExtension */;
+			targetProxy = 1A1B1C1D2F40000100AA0050 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0EACABA32F0E8CC2005E1825 /* Debug */ = {
@@ -377,6 +501,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ShiftSync.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = V7XG8HDQL4;
@@ -410,6 +535,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ShiftSync.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 8;
 				DEVELOPMENT_TEAM = V7XG8HDQL4;
@@ -438,6 +564,62 @@
 			};
 			name = Release;
 		};
+		1A1B1C1D2F40000100AA0060 /* Debug */ = {
+			isa = XCBuildConfiguration;
+				buildSettings = {
+					APPLICATION_EXTENSION_API_ONLY = YES;
+					CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
+					CODE_SIGN_ENTITLEMENTS = ShiftSyncWidgetExtension.entitlements;
+					CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 8;
+				DEVELOPMENT_TEAM = V7XG8HDQL4;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "ShiftSyncWidgetExtension-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.inazumimakoto.ShiftSync.ShiftSyncWidgetsExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1A1B1C1D2F40000100AA0061 /* Release */ = {
+			isa = XCBuildConfiguration;
+				buildSettings = {
+					APPLICATION_EXTENSION_API_ONLY = YES;
+					CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
+					CODE_SIGN_ENTITLEMENTS = ShiftSyncWidgetExtension.entitlements;
+					CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 8;
+				DEVELOPMENT_TEAM = V7XG8HDQL4;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "ShiftSyncWidgetExtension-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.inazumimakoto.ShiftSync.ShiftSyncWidgetsExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -455,6 +637,15 @@
 			buildConfigurations = (
 				0EACABA62F0E8CC2005E1825 /* Debug */,
 				0EACABA72F0E8CC2005E1825 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1A1B1C1D2F40000100AA0062 /* Build configuration list for PBXNativeTarget "ShiftSyncWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A1B1C1D2F40000100AA0060 /* Debug */,
+				1A1B1C1D2F40000100AA0061 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

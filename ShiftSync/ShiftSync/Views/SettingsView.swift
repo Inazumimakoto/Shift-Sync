@@ -4,6 +4,7 @@ import EventKit
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) var dismiss
+    @AppStorage(LaunchDestination.storageKey) private var launchDestinationRawValue = LaunchDestination.shifts.rawValue
     
     @State private var iCloudEnabled: Bool = true
     @State private var googleEnabled: Bool = false
@@ -230,6 +231,20 @@ struct SettingsView: View {
                     if !appState.isLoggedIn {
                         Text("シフトを取得するにはShiftWebへのログインが必要です")
                     }
+                }
+
+                Section {
+                    Picker("起動時に表示", selection: $launchDestinationRawValue) {
+                        ForEach(LaunchDestination.allCases) { destination in
+                            Text(destination.launchOptionLabel)
+                                .tag(destination.rawValue)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                } header: {
+                    Text("表示")
+                } footer: {
+                    Text("アプリ起動時に最初に開く画面を選べます")
                 }
                 
                 // アプリ情報

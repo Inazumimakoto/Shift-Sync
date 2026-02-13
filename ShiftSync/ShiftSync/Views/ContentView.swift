@@ -1,8 +1,49 @@
 import SwiftUI
 import Combine
+import WebKit
+
+enum LaunchDestination: String, CaseIterable, Identifiable {
+    case shifts
+    case timecard
+
+    static let storageKey = "launchDestination"
+
+    var id: String { rawValue }
+
+    var tabLabel: String {
+        switch self {
+        case .shifts:
+            return "シフト"
+        case .timecard:
+            return "打刻"
+        }
+    }
+
+    var launchOptionLabel: String {
+        switch self {
+        case .shifts:
+            return "シフト一覧"
+        case .timecard:
+            return "打刻ページ"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .shifts:
+            return "calendar"
+        case .timecard:
+            return "clock.badge"
+        }
+    }
+}
 
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
+    @AppStorage(LaunchDestination.storageKey) private var launchDestinationRawValue = LaunchDestination.shifts.rawValue
+
+    @State private var selectedTab: LaunchDestination = .shifts
+    @State private var didApplyInitialTab = false
     @State private var isSyncing = false
     @State private var showingSettings = false
     @State private var showingSetup = false
@@ -10,33 +51,30 @@ struct ContentView: View {
     
     var body: some View {
         NavigationStack {
-            ZStack {
-                Color(uiColor: .systemGroupedBackground)
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 0) {
-                    // ヘッダー
-                    headerSection
-                    
-                    // シフト一覧
-                    if appState.shifts.isEmpty {
-                        emptyStateView
-                    } else {
-                        shiftListView
+            TabView(selection: $selectedTab) {
+                shiftTabView
+                    .tag(LaunchDestination.shifts)
+                    .tabItem {
+                        Label(LaunchDestination.shifts.tabLabel, systemImage: LaunchDestination.shifts.systemImage)
                     }
-                    
-                    // 同期ボタン
-                    syncButton
-                }
+
+                TimecardPageView()
+                    .tag(LaunchDestination.timecard)
+                    .tabItem {
+                        Label(LaunchDestination.timecard.tabLabel, systemImage: LaunchDestination.timecard.systemImage)
+                    }
             }
             .navigationTitle("シフト同期")
             .navigationBarTitleDisplayMode(.large)
+            .toolbar(selectedTab == .timecard ? .hidden : .visible, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingSettings = true
-                    } label: {
-                        Image(systemName: "gearshape")
+                if selectedTab == .shifts {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            showingSettings = true
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
                     }
                 }
             }
@@ -47,6 +85,7 @@ struct ContentView: View {
                 SetupView()
             }
             .onAppear {
+                applyInitialTabIfNeeded()
                 if !appState.isLoggedIn {
                     showingSetup = true
                 } else {
@@ -59,11 +98,40 @@ struct ContentView: View {
                 // バックグラウンドから戻った時にシフトを再読み込み
                 loadShiftsFromStorage()
             }
+            .onChange(of: launchDestinationRawValue) { _, newValue in
+                guard let destination = LaunchDestination(rawValue: newValue) else { return }
+                selectedTab = destination
+            }
             .alert("同期エラー", isPresented: .constant(syncError != nil)) {
                 Button("OK") { syncError = nil }
             } message: {
                 Text(syncError ?? "")
             }
+        }
+    }
+
+    private var shiftTabView: some View {
+        ZStack(alignment: .bottom) {
+            Color(uiColor: .systemGroupedBackground)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // ヘッダー
+                headerSection
+
+                // シフト一覧
+                if appState.shifts.isEmpty {
+                    emptyStateView
+                        .padding(.bottom, 90)
+                } else {
+                    shiftListView
+                }
+            }
+
+            // 同期ボタン（フローティング）
+            syncButton
+                .padding(.horizontal, 16)
+                .padding(.bottom, 10)
         }
     }
     
@@ -119,6 +187,9 @@ struct ContentView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .safeAreaInset(edge: .bottom) {
+            Color.clear.frame(height: 88)
+        }
     }
     
     private var upcomingShifts: [Shift] {
@@ -170,16 +241,22 @@ struct ContentView: View {
             .font(.headline)
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
-            .background(Color.blue)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .frame(height: 54)
+            .background(Color.blue.gradient)
+            .clipShape(Capsule())
+            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
         }
         .disabled(isSyncing || !appState.isLoggedIn)
-        .padding()
     }
     
     // MARK: - Actions
-    
+
+    private func applyInitialTabIfNeeded() {
+        guard !didApplyInitialTab else { return }
+        selectedTab = LaunchDestination(rawValue: launchDestinationRawValue) ?? .shifts
+        didApplyInitialTab = true
+    }
+
     private func performSync() {
         guard !isSyncing else { return }
         
@@ -192,7 +269,7 @@ struct ContentView: View {
         
         Task {
             do {
-                let result = try await BackgroundTaskManager.shared.performSync(source: .manual)
+                _ = try await BackgroundTaskManager.shared.performSync(source: .manual)
                 
                 await MainActor.run {
                     appState.shifts = SharedStorage.loadShifts()
@@ -266,6 +343,191 @@ struct ShiftRowView: View {
             Spacer()
         }
         .padding(.vertical, 4)
+    }
+}
+
+struct TimecardPageView: View {
+    @EnvironmentObject var appState: AppState
+
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+
+    var body: some View {
+        ZStack {
+            Color(uiColor: .systemBackground)
+                .ignoresSafeArea(edges: [.top, .bottom])
+
+            if appState.isLoggedIn {
+                TimecardWebView(
+                    isLoading: $isLoading,
+                    errorMessage: $errorMessage
+                )
+                .ignoresSafeArea(edges: [.top, .bottom])
+            } else {
+                VStack(spacing: 12) {
+                    Image(systemName: "person.badge.key")
+                        .font(.system(size: 44))
+                        .foregroundStyle(.secondary)
+                    Text("ShiftWebにログインすると打刻ページを表示できます")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+            }
+
+            if appState.isLoggedIn && isLoading {
+                ProgressView("読み込み中...")
+                    .padding()
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+        }
+        .alert("打刻ページエラー", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+}
+
+struct TimecardWebView: UIViewRepresentable {
+    @Binding var isLoading: Bool
+    @Binding var errorMessage: String?
+
+    let timecardURL = URL(string: "https://ams-app.club/timecard.php")!
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeUIView(context: Context) -> WKWebView {
+        let config = WKWebViewConfiguration()
+        config.websiteDataStore = .default()
+
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.navigationDelegate = context.coordinator
+
+        context.coordinator.loadInitialPage(webView)
+        return webView
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
+
+    class Coordinator: NSObject, WKNavigationDelegate {
+        private let parent: TimecardWebView
+
+        private var autoLoginAttempts = 0
+        private let maxAutoLoginAttempts = 2
+        private var didForceOpenTimecardAfterLogin = false
+
+        init(_ parent: TimecardWebView) {
+            self.parent = parent
+        }
+
+        func loadInitialPage(_ webView: WKWebView) {
+            autoLoginAttempts = 0
+            didForceOpenTimecardAfterLogin = false
+            parent.isLoading = true
+            parent.errorMessage = nil
+            webView.load(URLRequest(url: parent.timecardURL))
+        }
+
+        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+            parent.isLoading = true
+        }
+
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            parent.isLoading = false
+
+            guard let url = webView.url else { return }
+            let absoluteURL = url.absoluteString
+
+            if absoluteURL.contains("login.php") {
+                attemptAutoLogin(webView)
+                return
+            }
+
+            if absoluteURL.contains("timecard.php") {
+                return
+            }
+
+            if absoluteURL.contains("ams-app.club"), !didForceOpenTimecardAfterLogin {
+                didForceOpenTimecardAfterLogin = true
+                webView.load(URLRequest(url: parent.timecardURL))
+            }
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            parent.isLoading = false
+            parent.errorMessage = "ページの読み込みに失敗しました: \(error.localizedDescription)"
+        }
+
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            parent.isLoading = false
+            parent.errorMessage = "ページの読み込みに失敗しました: \(error.localizedDescription)"
+        }
+
+        private func attemptAutoLogin(_ webView: WKWebView) {
+            guard autoLoginAttempts < maxAutoLoginAttempts else {
+                parent.errorMessage = "自動ログインに失敗しました。設定からShiftWebに再ログインしてください。"
+                return
+            }
+
+            guard let credentials = try? KeychainService.shared.getShiftWebCredentials() else {
+                parent.errorMessage = "キーチェーンにShiftWebのID/PASSが見つかりません。"
+                return
+            }
+
+            autoLoginAttempts += 1
+
+            let escapedID = jsEscaped(credentials.id)
+            let escapedPassword = jsEscaped(credentials.password)
+
+            let script = """
+            (function() {
+                var idInput = document.getElementById('id') ||
+                              document.querySelector('input[name="id"]') ||
+                              document.querySelector('input[type="text"]');
+                var passwordInput = document.getElementById('password') ||
+                                    document.querySelector('input[name="password"]') ||
+                                    document.querySelector('input[type="password"]');
+                if (!idInput || !passwordInput) {
+                    return 'fields_not_found';
+                }
+                idInput.value = '\(escapedID)';
+                passwordInput.value = '\(escapedPassword)';
+
+                var form = idInput.form || passwordInput.form || document.querySelector('form');
+                if (form) {
+                    form.submit();
+                    return 'submitted';
+                }
+
+                var submitButton = document.querySelector('button[type="submit"], input[type="submit"]');
+                if (submitButton) {
+                    submitButton.click();
+                    return 'clicked';
+                }
+
+                return 'submit_not_found';
+            })();
+            """
+
+            webView.evaluateJavaScript(script) { _, error in
+                if let error = error {
+                    self.parent.errorMessage = "自動ログインに失敗しました: \(error.localizedDescription)"
+                }
+            }
+        }
+
+        private func jsEscaped(_ text: String) -> String {
+            text
+                .replacingOccurrences(of: "\\", with: "\\\\")
+                .replacingOccurrences(of: "'", with: "\\'")
+                .replacingOccurrences(of: "\n", with: "\\n")
+                .replacingOccurrences(of: "\r", with: "\\r")
+        }
     }
 }
 

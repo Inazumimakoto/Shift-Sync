@@ -31,6 +31,7 @@ class GoogleCalendarService {
     }
     
     /// Google Sign-In を実行
+    @available(iOSApplicationExtension, unavailable)
     @MainActor
     func signIn(presenting viewController: UIViewController) async throws {
         guard isConfigured else {

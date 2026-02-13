@@ -14,7 +14,8 @@ class SyncHistoryManager {
     
     /// 履歴を取得（新しい順）
     func getHistory() -> [SyncLogEntry] {
-        guard let data = UserDefaults.standard.data(forKey: storageKey),
+        let defaults = SharedStorage.sharedDefaults ?? UserDefaults.standard
+        guard let data = defaults.data(forKey: storageKey),
               let entries = try? JSONDecoder().decode([SyncLogEntry].self, from: data) else {
             return []
         }
@@ -54,7 +55,8 @@ class SyncHistoryManager {
     
     private func saveEntries(_ entries: [SyncLogEntry]) {
         if let data = try? JSONEncoder().encode(entries) {
-            UserDefaults.standard.set(data, forKey: storageKey)
+            let defaults = SharedStorage.sharedDefaults ?? UserDefaults.standard
+            defaults.set(data, forKey: storageKey)
         }
     }
 }

@@ -101,10 +101,10 @@ class AppState: ObservableObject {
         }
         
         // UserDefaultsから設定を読み込み
-        iCloudEnabled = UserDefaults.standard.bool(forKey: "iCloudEnabled")
-        googleEnabled = UserDefaults.standard.bool(forKey: "googleEnabled")
-        selectedICloudCalendar = UserDefaults.standard.string(forKey: "selectedICloudCalendar")
-        selectedGoogleCalendar = UserDefaults.standard.string(forKey: "selectedGoogleCalendar")
+        iCloudEnabled = SharedStorage.boolSetting(forKey: SharedStorage.iCloudEnabledKey, default: true)
+        googleEnabled = SharedStorage.boolSetting(forKey: SharedStorage.googleEnabledKey, default: false)
+        selectedICloudCalendar = SharedStorage.stringSetting(forKey: SharedStorage.selectedICloudCalendarKey)
+        selectedGoogleCalendar = SharedStorage.stringSetting(forKey: SharedStorage.selectedGoogleCalendarKey)
         
         if let lastSync = SharedStorage.loadLastSyncDate() {
             lastSyncDate = lastSync

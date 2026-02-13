@@ -51,7 +51,7 @@ struct SettingsView: View {
                         Toggle("", isOn: $iCloudEnabled)
                             .labelsHidden()
                             .onChange(of: iCloudEnabled) { _, newValue in
-                                UserDefaults.standard.set(newValue, forKey: "iCloudEnabled")
+                                SharedStorage.setBoolSetting(newValue, forKey: SharedStorage.iCloudEnabledKey)
                                 appState.iCloudEnabled = newValue
                             }
                     }
@@ -63,7 +63,7 @@ struct SettingsView: View {
                                 Button {
                                     let oldCalendarId = selectedCalendar?.id
                                     selectedCalendar = calendar
-                                    UserDefaults.standard.set(calendar.id, forKey: "selectedICloudCalendar")
+                                    SharedStorage.setStringSetting(calendar.id, forKey: SharedStorage.selectedICloudCalendarKey)
                                     appState.selectedICloudCalendar = calendar.id
                                     
                                     // 古いカレンダーから新しいカレンダーに移行
@@ -110,7 +110,7 @@ struct SettingsView: View {
                         Toggle("", isOn: $googleEnabled)
                             .labelsHidden()
                             .onChange(of: googleEnabled) { _, newValue in
-                                UserDefaults.standard.set(newValue, forKey: "googleEnabled")
+                                SharedStorage.setBoolSetting(newValue, forKey: SharedStorage.googleEnabledKey)
                                 appState.googleEnabled = newValue
                             }
                     }
@@ -147,8 +147,11 @@ struct SettingsView: View {
                                 .pickerStyle(.menu)
                                 .onChange(of: selectedGoogleCalendar) { _, newValue in
                                     if let id = newValue?.id {
-                                        UserDefaults.standard.set(id, forKey: "selectedGoogleCalendar")
+                                        SharedStorage.setStringSetting(id, forKey: SharedStorage.selectedGoogleCalendarKey)
                                         appState.selectedGoogleCalendar = id
+                                    } else {
+                                        SharedStorage.setStringSetting(nil, forKey: SharedStorage.selectedGoogleCalendarKey)
+                                        appState.selectedGoogleCalendar = nil
                                     }
                                 }
                             }
@@ -414,15 +417,15 @@ struct SettingsView: View {
     // MARK: - Actions
     
     private func loadSettings() {
-        iCloudEnabled = UserDefaults.standard.bool(forKey: "iCloudEnabled")
-        googleEnabled = UserDefaults.standard.bool(forKey: "googleEnabled")
+        iCloudEnabled = SharedStorage.boolSetting(forKey: SharedStorage.iCloudEnabledKey, default: true)
+        googleEnabled = SharedStorage.boolSetting(forKey: SharedStorage.googleEnabledKey, default: false)
         
         // iCloudカレンダー一覧を読み込み
         if CalendarService.shared.hasAccess {
             let calendars = CalendarService.shared.getICloudCalendars()
             availableCalendars = calendars.map { EKCalendarWrapper(calendar: $0) }
             
-            if let savedId = UserDefaults.standard.string(forKey: "selectedICloudCalendar") {
+            if let savedId = SharedStorage.stringSetting(forKey: SharedStorage.selectedICloudCalendarKey) {
                 selectedCalendar = availableCalendars.first { $0.id == savedId }
             }
         }
@@ -474,7 +477,7 @@ struct SettingsView: View {
                     isLoadingGoogleCalendars = false
                     
                     // 保存済みカレンダーを復元
-                    if let savedId = UserDefaults.standard.string(forKey: "selectedGoogleCalendar") {
+                    if let savedId = SharedStorage.stringSetting(forKey: SharedStorage.selectedGoogleCalendarKey) {
                         selectedGoogleCalendar = calendars.first { $0.id == savedId }
                     }
                 }
@@ -498,7 +501,7 @@ struct SettingsView: View {
             let wrapper = EKCalendarWrapper(calendar: calendar)
             availableCalendars.append(wrapper)
             selectedCalendar = wrapper
-            UserDefaults.standard.set(wrapper.id, forKey: "selectedICloudCalendar")
+            SharedStorage.setStringSetting(wrapper.id, forKey: SharedStorage.selectedICloudCalendarKey)
             appState.selectedICloudCalendar = wrapper.id
             newCalendarName = ""
             
@@ -568,7 +571,7 @@ struct SettingsView: View {
                 try await ShiftWebClient.shared.login(id: credentials.id, password: credentials.password)
                 
                 let (isICloudOn, calendarId) = await MainActor.run {
-                    (iCloudEnabled, UserDefaults.standard.string(forKey: "selectedICloudCalendar"))
+                    (iCloudEnabled, SharedStorage.stringSetting(forKey: SharedStorage.selectedICloudCalendarKey))
                 }
                 
                 guard isICloudOn else {

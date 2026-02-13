@@ -388,10 +388,10 @@ struct SetupView: View {
     
     private func completeSetup() {
         if let selected = selectedCalendar {
-            UserDefaults.standard.set(selected.id, forKey: "selectedICloudCalendar")
+            SharedStorage.setStringSetting(selected.id, forKey: SharedStorage.selectedICloudCalendarKey)
             appState.selectedICloudCalendar = selected.id
             appState.iCloudEnabled = true
-            UserDefaults.standard.set(true, forKey: "iCloudEnabled")
+            SharedStorage.setBoolSetting(true, forKey: SharedStorage.iCloudEnabledKey)
         }
         
         // バックグラウンド更新をスケジュール
@@ -409,10 +409,7 @@ struct SetupView: View {
             await MainActor.run {
                 isSyncing = false
                 // 同期したシフトをAppStateに反映
-                if let data = UserDefaults.standard.data(forKey: "savedShifts"),
-                   let shifts = try? JSONDecoder().decode([Shift].self, from: data) {
-                    appState.shifts = shifts
-                }
+                appState.shifts = SharedStorage.loadShifts()
                 appState.lastSyncDate = Date()
                 dismiss()
             }

@@ -1,6 +1,8 @@
 import Foundation
-import BackgroundTasks
 import EventKit
+#if canImport(BackgroundTasks)
+import BackgroundTasks
+#endif
 #if canImport(WidgetKit)
 import WidgetKit
 #endif
@@ -13,6 +15,7 @@ class BackgroundTaskManager {
     private init() {}
     
     /// バックグラウンドタスクを登録
+    @available(iOSApplicationExtension, unavailable)
     func registerBackgroundTask() {
         BGTaskScheduler.shared.register(
             forTaskWithIdentifier: Self.taskIdentifier,
@@ -23,6 +26,7 @@ class BackgroundTaskManager {
     }
     
     /// 次回のバックグラウンド更新をスケジュール
+    @available(iOSApplicationExtension, unavailable)
     func scheduleAppRefresh() {
         let request = BGAppRefreshTaskRequest(identifier: Self.taskIdentifier)
         // 最短4時間後に実行
@@ -32,11 +36,12 @@ class BackgroundTaskManager {
             try BGTaskScheduler.shared.submit(request)
             print("バックグラウンド更新をスケジュールしました")
         } catch {
-            print("バックグラウンド更新のスケジュールに失敗: \(error)")
+                print("バックグラウンド更新のスケジュールに失敗: \(error)")
         }
     }
     
     /// バックグラウンドタスクを処理
+    @available(iOSApplicationExtension, unavailable)
     private func handleAppRefresh(task: BGAppRefreshTask) {
         // 次回の更新をスケジュール
         scheduleAppRefresh()
@@ -85,13 +90,13 @@ class BackgroundTaskManager {
             
             // カレンダーに同期
             var result = SyncResult()
-            let iCloudEnabled = UserDefaults.standard.object(forKey: "iCloudEnabled") as? Bool ?? true
-            let googleEnabled = UserDefaults.standard.bool(forKey: "googleEnabled")
+            let iCloudEnabled = SharedStorage.boolSetting(forKey: SharedStorage.iCloudEnabledKey, default: true)
+            let googleEnabled = SharedStorage.boolSetting(forKey: SharedStorage.googleEnabledKey, default: false)
             
             // iCloud カレンダー同期
             if iCloudEnabled,
                CalendarService.shared.hasAccess,
-               let calendarID = UserDefaults.standard.string(forKey: "selectedICloudCalendar"),
+               let calendarID = SharedStorage.stringSetting(forKey: SharedStorage.selectedICloudCalendarKey),
                let calendar = CalendarService.shared.getCalendars().first(where: { $0.calendarIdentifier == calendarID }) {
                 result = try CalendarService.shared.syncShifts(newShifts, to: calendar)
             }
@@ -99,7 +104,7 @@ class BackgroundTaskManager {
             // Google カレンダー同期
             if googleEnabled,
                GoogleCalendarService.shared.isSignedIn,
-               let googleCalendarID = UserDefaults.standard.string(forKey: "selectedGoogleCalendar") {
+               let googleCalendarID = SharedStorage.stringSetting(forKey: SharedStorage.selectedGoogleCalendarKey) {
                 let googleResult = try await GoogleCalendarService.shared.syncShifts(newShifts, to: googleCalendarID)
                 result.added += googleResult.added
                 result.updated += googleResult.updated
@@ -110,12 +115,9 @@ class BackgroundTaskManager {
             }
             
             // 新しいシフトを保存（取得範囲内は置き換え）
-            let syncRange = currentSyncRange()
-            let updatedShifts = replaceShifts(
+            let updatedShifts = SharedStorage.replaceShiftsInCurrentSyncRange(
                 existing: previousShifts,
-                incoming: newShifts,
-                rangeStart: syncRange.start,
-                rangeEnd: syncRange.end
+                incoming: newShifts
             )
             savePreviousShifts(updatedShifts)
             
@@ -146,20 +148,6 @@ class BackgroundTaskManager {
     
     private func savePreviousShifts(_ shifts: [Shift]) {
         SharedStorage.saveShifts(shifts)
-    }
-    
-    private func replaceShifts(existing: [Shift], incoming: [Shift], rangeStart: Date, rangeEnd: Date) -> [Shift] {
-        let kept = existing.filter { $0.start < rangeStart || $0.start >= rangeEnd }
-        return (kept + incoming).sorted { $0.start < $1.start }
-    }
-    
-    private func currentSyncRange() -> (start: Date, end: Date) {
-        let calendar = Calendar.current
-        let now = Date()
-        let startOfThisMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
-        let startOfPrevMonth = calendar.date(byAdding: .month, value: -1, to: startOfThisMonth)!
-        let startOfMonthAfterNext = calendar.date(byAdding: .month, value: 2, to: startOfThisMonth)!
-        return (start: startOfPrevMonth, end: startOfMonthAfterNext)
     }
     
     private func mergeUniqueShifts(_ existing: [Shift], _ incoming: [Shift]) -> [Shift] {

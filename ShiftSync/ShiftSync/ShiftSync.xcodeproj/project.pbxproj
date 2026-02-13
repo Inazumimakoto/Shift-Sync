@@ -36,11 +36,19 @@
 		1A1B1C1D2F40000100AA0004 /* SharedStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1B1C1D2F40000100AA0011 /* SharedStorage.swift */; };
 		1A1B1C1D2F40000100AA0005 /* Shift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABAC2F0E8D6C005E1825 /* Shift.swift */; };
 		1A1B1C1D2F40000100AA0006 /* ShiftSyncWidgetsExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 1A1B1C1D2F40000100AA0010 /* ShiftSyncWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		1A1B1C1D2F50000100AA0001 /* WidgetSyncIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1B1C1D2F50000100AA0017 /* WidgetSyncIntent.swift */; };
-		1A1B1C1D2F50000100AA0002 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABB12F0E8D6C005E1825 /* KeychainService.swift */; };
-		1A1B1C1D2F50000100AA0003 /* ShiftWebClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABAE2F0E8D6C005E1825 /* ShiftWebClient.swift */; };
-		1A1B1C1D2F50000100AA0004 /* ShiftParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABB22F0E8D6C005E1825 /* ShiftParser.swift */; };
-		1A1B1C1D2F50000100AA0005 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 0EACABC92F0E8DAE005E1825 /* SwiftSoup */; };
+			1A1B1C1D2F50000100AA0001 /* WidgetSyncIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1B1C1D2F50000100AA0017 /* WidgetSyncIntent.swift */; };
+			1A1B1C1D2F50000100AA0002 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABB12F0E8D6C005E1825 /* KeychainService.swift */; };
+			1A1B1C1D2F50000100AA0003 /* ShiftWebClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABAE2F0E8D6C005E1825 /* ShiftWebClient.swift */; };
+			1A1B1C1D2F50000100AA0004 /* ShiftParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABB22F0E8D6C005E1825 /* ShiftParser.swift */; };
+			1A1B1C1D2F50000100AA0005 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 0EACABC92F0E8DAE005E1825 /* SwiftSoup */; };
+			1A1B1C1D2F60000100AA0001 /* BackgroundTaskManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABA82F0E8D6C005E1825 /* BackgroundTaskManager.swift */; };
+			1A1B1C1D2F60000100AA0002 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABA92F0E8D6C005E1825 /* NotificationManager.swift */; };
+			1A1B1C1D2F60000100AA0003 /* CalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABAF2F0E8D6C005E1825 /* CalendarService.swift */; };
+			1A1B1C1D2F60000100AA0004 /* GoogleCalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACABD12F0E8E00005E1825 /* GoogleCalendarService.swift */; };
+			1A1B1C1D2F60000100AA0005 /* SyncHistoryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACACB42F11002005E1825 /* SyncHistoryManager.swift */; };
+			1A1B1C1D2F60000100AA0006 /* SyncLogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACACB22F11001005E1825 /* SyncLogEntry.swift */; };
+			1A1B1C1D2F60000100AA0007 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 0EACABCC2F0E8DCC005E1825 /* GoogleSignIn */; };
+			1A1B1C1D2F60000100AA0008 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 0EACABCE2F0E8DCC005E1825 /* GoogleSignInSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -111,14 +119,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		1A1B1C1D2F40000100AA0031 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				1A1B1C1D2F50000100AA0005 /* SwiftSoup in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+			1A1B1C1D2F40000100AA0031 /* Frameworks */ = {
+				isa = PBXFrameworksBuildPhase;
+				buildActionMask = 2147483647;
+				files = (
+					1A1B1C1D2F60000100AA0008 /* GoogleSignInSwift in Frameworks */,
+					1A1B1C1D2F60000100AA0007 /* GoogleSignIn in Frameworks */,
+					1A1B1C1D2F50000100AA0005 /* SwiftSoup in Frameworks */,
+				);
+				runOnlyForDeploymentPostprocessing = 0;
+			};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -241,7 +251,7 @@
 			productReference = 0EACAB9A2F0E8CC1005E1825 /* ShiftSync.app */;
 			productType = "com.apple.product-type.application";
 		};
-		1A1B1C1D2F40000100AA0040 /* ShiftSyncWidgetsExtension */ = {
+			1A1B1C1D2F40000100AA0040 /* ShiftSyncWidgetsExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1A1B1C1D2F40000100AA0062 /* Build configuration list for PBXNativeTarget "ShiftSyncWidgetsExtension" */;
 			buildPhases = (
@@ -253,11 +263,13 @@
 			);
 			dependencies = (
 			);
-			name = ShiftSyncWidgetsExtension;
-			packageProductDependencies = (
-				0EACABC92F0E8DAE005E1825 /* SwiftSoup */,
-			);
-			productName = ShiftSyncWidgetsExtension;
+				name = ShiftSyncWidgetsExtension;
+				packageProductDependencies = (
+					0EACABC92F0E8DAE005E1825 /* SwiftSoup */,
+					0EACABCC2F0E8DCC005E1825 /* GoogleSignIn */,
+					0EACABCE2F0E8DCC005E1825 /* GoogleSignInSwift */,
+				);
+				productName = ShiftSyncWidgetsExtension;
 			productReference = 1A1B1C1D2F40000100AA0010 /* ShiftSyncWidgetsExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
@@ -349,20 +361,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		1A1B1C1D2F40000100AA0033 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				1A1B1C1D2F40000100AA0002 /* ShiftSyncWidgetBundle.swift in Sources */,
-				1A1B1C1D2F40000100AA0003 /* ShiftSyncSmallWidget.swift in Sources */,
-				1A1B1C1D2F40000100AA0004 /* SharedStorage.swift in Sources */,
-				1A1B1C1D2F40000100AA0005 /* Shift.swift in Sources */,
-				1A1B1C1D2F50000100AA0001 /* WidgetSyncIntent.swift in Sources */,
-				1A1B1C1D2F50000100AA0002 /* KeychainService.swift in Sources */,
-				1A1B1C1D2F50000100AA0003 /* ShiftWebClient.swift in Sources */,
-				1A1B1C1D2F50000100AA0004 /* ShiftParser.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
+			1A1B1C1D2F40000100AA0033 /* Sources */ = {
+				isa = PBXSourcesBuildPhase;
+				buildActionMask = 2147483647;
+				files = (
+					1A1B1C1D2F60000100AA0006 /* SyncLogEntry.swift in Sources */,
+					1A1B1C1D2F60000100AA0005 /* SyncHistoryManager.swift in Sources */,
+					1A1B1C1D2F40000100AA0002 /* ShiftSyncWidgetBundle.swift in Sources */,
+					1A1B1C1D2F60000100AA0002 /* NotificationManager.swift in Sources */,
+					1A1B1C1D2F40000100AA0003 /* ShiftSyncSmallWidget.swift in Sources */,
+					1A1B1C1D2F40000100AA0004 /* SharedStorage.swift in Sources */,
+					1A1B1C1D2F40000100AA0005 /* Shift.swift in Sources */,
+					1A1B1C1D2F60000100AA0003 /* CalendarService.swift in Sources */,
+					1A1B1C1D2F50000100AA0001 /* WidgetSyncIntent.swift in Sources */,
+					1A1B1C1D2F60000100AA0001 /* BackgroundTaskManager.swift in Sources */,
+					1A1B1C1D2F50000100AA0002 /* KeychainService.swift in Sources */,
+					1A1B1C1D2F60000100AA0004 /* GoogleCalendarService.swift in Sources */,
+					1A1B1C1D2F50000100AA0003 /* ShiftWebClient.swift in Sources */,
+					1A1B1C1D2F50000100AA0004 /* ShiftParser.swift in Sources */,
+				);
+				runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 

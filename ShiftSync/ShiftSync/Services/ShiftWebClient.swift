@@ -94,6 +94,7 @@ class ShiftWebClient {
         let nextMonth = thisMonth == 12 ? 1 : thisMonth + 1
         let nextYear = thisMonth == 12 ? thisYear + 1 : thisYear
         
+        // サーバー負荷を抑えるため、3ヶ月分は意図的に直列取得する（並列リクエストしない）
         // 先月のシフト
         let htmlPrev = try await fetchShiftPage(year: prevYear, month: prevMonth)
         let shiftsPrev = try ShiftParser.parseShifts(html: htmlPrev)
@@ -118,6 +119,7 @@ class ShiftWebClient {
     /// 指定した年月のシフトを取得（複数月対応）
     func fetchShiftsForMonths(_ months: [(year: Int, month: Int)]) async throws -> [Shift] {
         var allShifts: [Shift] = []
+        // 負荷集中を避けるため、複数月指定でも1ヶ月ずつ順番に取得する
         for (year, month) in months {
             let html = try await fetchShiftPage(year: year, month: month)
             let shifts = try ShiftParser.parseShifts(html: html)

@@ -1,10 +1,11 @@
 # ShiftSync iOS App
 
-バイト先のシフト管理サイト（ShiftWeb）からシフトを取得し、iCloud/Googleカレンダーに自動同期するiOSアプリ。
+バイト先のシフト管理サイト（ShiftWeb）からシフトを取得し、iCloud/Googleカレンダーに自動同期し、打刻にも使えるiOSアプリ。
 
 ## 機能
 
 - 📱 **シフト取得**: ShiftWebからシフト情報をスクレイピング
+- ⏱️ **打刻対応**: アプリ内の「打刻」タブからShiftWebの打刻ページを開いて打刻操作が可能
 - 📅 **カレンダー同期**: iCloud（EventKit）、Googleカレンダー（API）
 - 🔄 **バックグラウンド同期**: BGTaskSchedulerで1日数回自動同期
 - 🔔 **変更通知**: 新規追加・変更・削除をプッシュ通知
@@ -37,6 +38,8 @@ Xcode → File → Packages → Reset Package Caches
 
 ⌘R でシミュレータまたは実機で実行
 
+起動後は「打刻」タブからShiftWebの打刻ページを開けます。
+
 ## Google Calendar連携（オプション）
 
 1. [Google Cloud Console](https://console.cloud.google.com/) でプロジェクト作成
@@ -53,7 +56,7 @@ ShiftSync/
 ├── Models/
 │   └── Shift.swift                 # シフトデータモデル
 ├── Views/
-│   ├── ContentView.swift           # メイン画面
+│   ├── ContentView.swift           # メイン画面（シフト一覧/打刻タブ）
 │   ├── SetupView.swift             # 初回セットアップ
 │   ├── SettingsView.swift          # 設定画面
 │   └── ShiftWebLoginView.swift          # WebViewログイン

@@ -22,6 +22,8 @@
 - 全履歴同期
 
 ### セットアップ
+TestFlightからダウンロード: [https://testflight.apple.com/join/Cjyt88rk](https://testflight.apple.com/join/Cjyt88rk)
+
 ```bash
 cd ShiftSync/ShiftSync
 open ShiftSync.xcodeproj

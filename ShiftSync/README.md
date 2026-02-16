@@ -1,12 +1,13 @@
 # ShiftSync iOS App
 
-バイト先のシフト管理サイト（ShiftWeb）からシフトを取得し、iCloud/Googleカレンダーに自動同期し、打刻にも使えるiOSアプリ。
+バイト先のシフト管理サイト（ShiftWeb）からシフトを取得し、iCloud/Googleカレンダーに自動同期し、打刻にも使え、ウィジェットからも同期できるiOSアプリ。
 
 ## 機能
 
 - 📱 **シフト取得**: ShiftWebからシフト情報をスクレイピング
 - ⏱️ **打刻対応**: アプリ内の「打刻」タブからShiftWebの打刻ページを開いて打刻操作が可能
 - 📅 **カレンダー同期**: iCloud（EventKit）、Googleカレンダー（API）
+- 🧩 **ウィジェット同期**: ホーム画面ウィジェットの「同期」ボタンから同期を実行可能
 - 🔄 **バックグラウンド同期**: BGTaskSchedulerで1日数回自動同期
 - 🔔 **変更通知**: 新規追加・変更・削除をプッシュ通知
 - 📤 **ICSエクスポート**: カレンダーファイルとして書き出し
@@ -39,6 +40,7 @@ Xcode → File → Packages → Reset Package Caches
 ⌘R でシミュレータまたは実機で実行
 
 起動後は「打刻」タブからShiftWebの打刻ページを開けます。
+ホーム画面に配置したウィジェットの「同期」ボタンからも同期を実行できます。
 
 ## Google Calendar連携（オプション）
 
@@ -60,6 +62,10 @@ ShiftSync/
 │   ├── SetupView.swift             # 初回セットアップ
 │   ├── SettingsView.swift          # 設定画面
 │   └── ShiftWebLoginView.swift          # WebViewログイン
+├── Widgets/
+│   ├── ShiftSyncSmallWidget.swift  # 小サイズウィジェット（同期ボタン付き）
+│   ├── WidgetSyncIntent.swift      # ウィジェットからの同期実行
+│   └── ShiftSyncWidgetBundle.swift # ウィジェット定義
 ├── Services/
 │   ├── ShiftWebClient.swift             # ShiftWebスクレイピング
 │   ├── ShiftParser.swift           # HTMLパース

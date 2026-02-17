@@ -371,6 +371,7 @@ struct TimecardPageView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var showingTimecardGuideBanner = false
+    @State private var timecardGuideTask: Task<Void, Never>?
 
     let onOpenLaunchDestinationSettings: () -> Void
 
@@ -427,15 +428,26 @@ struct TimecardPageView: View {
             Text(errorMessage ?? "")
         }
         .onAppear {
-            showTimecardGuideIfNeeded()
+            scheduleTimecardGuideIfNeeded()
+        }
+        .onDisappear {
+            timecardGuideTask?.cancel()
+            timecardGuideTask = nil
         }
     }
 
-    private func showTimecardGuideIfNeeded() {
-        guard !hasSeenTimecardGuide else { return }
-        hasSeenTimecardGuide = true
-        withAnimation(.easeInOut(duration: 0.25)) {
-            showingTimecardGuideBanner = true
+    private func scheduleTimecardGuideIfNeeded() {
+        guard !hasSeenTimecardGuide, timecardGuideTask == nil else { return }
+
+        timecardGuideTask = Task { @MainActor in
+            defer { timecardGuideTask = nil }
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard !Task.isCancelled, !hasSeenTimecardGuide else { return }
+
+            hasSeenTimecardGuide = true
+            withAnimation(.easeInOut(duration: 0.25)) {
+                showingTimecardGuideBanner = true
+            }
         }
     }
 
@@ -458,10 +470,10 @@ private struct TimecardGuideBanner: View {
                     .font(.headline)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("起動時の最初のページを変更できます")
+                    Text("このアプリで出勤打刻・休憩・退勤ができるようになりました！")
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                    Text("設定 > 起動時に表示 で「打刻ページ」を選択")
+                    Text("設定から、起動時に表示するページを変更できます。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

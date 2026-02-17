@@ -38,6 +38,14 @@ enum LaunchDestination: String, CaseIterable, Identifiable {
     }
 }
 
+enum AppPreferenceKeys {
+    static let hasSeenTimecardGuide = "hasSeenTimecardGuide"
+}
+
+enum SettingsScrollTarget: Hashable {
+    case launchDestination
+}
+
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
     @AppStorage(LaunchDestination.storageKey) private var launchDestinationRawValue = LaunchDestination.shifts.rawValue
@@ -46,6 +54,7 @@ struct ContentView: View {
     @State private var didApplyInitialTab = false
     @State private var isSyncing = false
     @State private var showingSettings = false
+    @State private var settingsScrollTarget: SettingsScrollTarget?
     @State private var showingSetup = false
     @State private var syncError: String?
     
@@ -58,7 +67,9 @@ struct ContentView: View {
                         Label(LaunchDestination.shifts.tabLabel, systemImage: LaunchDestination.shifts.systemImage)
                     }
 
-                TimecardPageView()
+                TimecardPageView {
+                    openLaunchDestinationSettings()
+                }
                     .tag(LaunchDestination.timecard)
                     .tabItem {
                         Label(LaunchDestination.timecard.tabLabel, systemImage: LaunchDestination.timecard.systemImage)
@@ -78,8 +89,10 @@ struct ContentView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
+            .sheet(isPresented: $showingSettings, onDismiss: {
+                settingsScrollTarget = nil
+            }) {
+                SettingsView(initialScrollTarget: settingsScrollTarget)
             }
             .fullScreenCover(isPresented: $showingSetup) {
                 SetupView()
@@ -257,6 +270,11 @@ struct ContentView: View {
         didApplyInitialTab = true
     }
 
+    private func openLaunchDestinationSettings() {
+        settingsScrollTarget = .launchDestination
+        showingSettings = true
+    }
+
     private func performSync() {
         guard !isSyncing else { return }
         
@@ -349,8 +367,12 @@ struct ShiftRowView: View {
 struct TimecardPageView: View {
     @EnvironmentObject var appState: AppState
 
+    @AppStorage(AppPreferenceKeys.hasSeenTimecardGuide) private var hasSeenTimecardGuide = false
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var showingTimecardGuide = false
+
+    let onOpenLaunchDestinationSettings: () -> Void
 
     var body: some View {
         ZStack {
@@ -388,6 +410,54 @@ struct TimecardPageView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        .onAppear {
+            showTimecardGuideIfNeeded()
+        }
+        .sheet(isPresented: $showingTimecardGuide) {
+            TimecardGuideSheet {
+                showingTimecardGuide = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    onOpenLaunchDestinationSettings()
+                }
+            } onDismiss: {
+                showingTimecardGuide = false
+            }
+            .presentationDetents([.height(230)])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    private func showTimecardGuideIfNeeded() {
+        guard !hasSeenTimecardGuide else { return }
+        hasSeenTimecardGuide = true
+        showingTimecardGuide = true
+    }
+}
+
+private struct TimecardGuideSheet: View {
+    let onOpenSettings: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Label("このページを起動時の最初にできます", systemImage: "lightbulb.max.fill")
+                .font(.headline)
+                .foregroundStyle(.orange)
+
+            Text("「設定 > 起動時に表示」で「打刻ページ」を選ぶと、次回から起動直後にこのページを開けます。")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 10) {
+                Button("あとで", action: onDismiss)
+                    .buttonStyle(.bordered)
+
+                Button("設定を開く", action: onOpenSettings)
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
     }
 }
 

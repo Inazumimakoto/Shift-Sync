@@ -6,6 +6,8 @@ struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
     @AppStorage(LaunchDestination.storageKey) private var launchDestinationRawValue = LaunchDestination.shifts.rawValue
     
+    let initialScrollTarget: SettingsScrollTarget?
+    
     @State private var iCloudEnabled: Bool = true
     @State private var googleEnabled: Bool = false
     @State private var selectedCalendar: EKCalendarWrapper?
@@ -24,6 +26,8 @@ struct SettingsView: View {
     @State private var isLoadingGoogleCalendars = false
     @State private var isSigningInGoogle = false
     @State private var showingAutomationGuide = false
+    @State private var highlightedScrollTarget: SettingsScrollTarget?
+    @State private var hasAppliedInitialScroll = false
     
     // Sync History
     @State private var syncHistory: [SyncLogEntry] = []
@@ -38,10 +42,15 @@ struct SettingsView: View {
     
     private let fullSyncStartYear = 2023
     private let fullSyncStartMonth = 1
+
+    init(initialScrollTarget: SettingsScrollTarget? = nil) {
+        self.initialScrollTarget = initialScrollTarget
+    }
     
     var body: some View {
         NavigationStack {
-            List {
+            ScrollViewReader { proxy in
+                List {
                 // 同期先セクション
                 Section {
                     // iCloud
@@ -236,19 +245,32 @@ struct SettingsView: View {
                     }
                 }
 
-                Section {
-                    Picker("起動時に表示", selection: $launchDestinationRawValue) {
-                        ForEach(LaunchDestination.allCases) { destination in
-                            Text(destination.launchOptionLabel)
-                                .tag(destination.rawValue)
+                    Section {
+                        Picker("起動時に表示", selection: $launchDestinationRawValue) {
+                            ForEach(LaunchDestination.allCases) { destination in
+                                Text(destination.launchOptionLabel)
+                                    .tag(destination.rawValue)
+                            }
                         }
+                        .pickerStyle(.menu)
+                        .id(SettingsScrollTarget.launchDestination)
+                        .listRowBackground(
+                            highlightedScrollTarget == .launchDestination
+                            ? Color.orange.opacity(0.18)
+                            : Color.clear
+                        )
+                        .overlay {
+                            if highlightedScrollTarget == .launchDestination {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.orange, lineWidth: 1.5)
+                                    .padding(.vertical, 4)
+                            }
+                        }
+                    } header: {
+                        Text("表示")
+                    } footer: {
+                        Text("アプリ起動時に最初に開く画面を選べます")
                     }
-                    .pickerStyle(.menu)
-                } header: {
-                    Text("表示")
-                } footer: {
-                    Text("アプリ起動時に最初に開く画面を選べます")
-                }
                 
                 // アプリ情報
                 Section {
@@ -333,83 +355,91 @@ struct SettingsView: View {
                     Text("Released under the MIT License")
                 }
                 
-                #if DEBUG
-                // デバッグ用セクション（リリースビルドでは非表示）
-                Section {
-                    Button(role: .destructive) {
-                        resetSavedShifts()
-                    } label: {
-                        Label("保存データをリセット", systemImage: "trash")
+                    #if DEBUG
+                    // デバッグ用セクション（リリースビルドでは非表示）
+                    Section {
+                        Button(role: .destructive) {
+                            resetSavedShifts()
+                        } label: {
+                            Label("保存データをリセット", systemImage: "trash")
+                        }
+                        
+                        Button {
+                            resetTimecardGuide()
+                        } label: {
+                            Label("打刻案内を再表示", systemImage: "arrow.counterclockwise.circle")
+                        }
+                        
+                        Button {
+                            modifyFirstShiftTime()
+                        } label: {
+                            Label("最初のシフト時間を変更", systemImage: "clock.arrow.2.circlepath")
+                        }
+                        
+                        Button {
+                            addFakeShift()
+                        } label: {
+                            Label("ダミーシフトを追加", systemImage: "plus.circle")
+                        }
+                    } header: {
+                        Text("デバッグ")
+                    } footer: {
+                        Text("保存データリセット→新規検出テスト\n打刻案内再表示→初回ガイド表示テスト\n時間変更→更新検出テスト\nダミー追加→削除検出テスト（次回同期で消える）")
                     }
-                    
-                    Button {
-                        modifyFirstShiftTime()
-                    } label: {
-                        Label("最初のシフト時間を変更", systemImage: "clock.arrow.2.circlepath")
-                    }
-                    
-                    Button {
-                        addFakeShift()
-                    } label: {
-                        Label("ダミーシフトを追加", systemImage: "plus.circle")
-                    }
-                } header: {
-                    Text("デバッグ")
-                } footer: {
-                    Text("リセット→新規検出テスト\n時間変更→更新検出テスト\nダミー追加→削除検出テスト（次回同期で消える）")
+                    #endif
                 }
-                #endif
-            }
-            .navigationTitle("設定")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("完了") {
-                        dismiss()
-                    }
-                }
-            }
-            .onAppear {
-                loadSettings()
-            }
-            .sheet(isPresented: $showingShiftWebLogin) {
-                ShiftWebLoginView { success in
-                    if success {
-                        appState.isLoggedIn = true
+                .navigationTitle("設定")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("完了") {
+                            dismiss()
+                        }
                     }
                 }
-            }
-            .sheet(isPresented: $showingExportSheet) {
-                if let url = exportURL {
-                    ShareSheet(items: [url])
+                .onAppear {
+                    loadSettings()
+                    scrollToInitialTargetIfNeeded(using: proxy)
                 }
-            }
-            .alert("ログアウト", isPresented: $showingLogoutConfirm) {
-                Button("キャンセル", role: .cancel) {}
-                Button("ログアウト", role: .destructive) {
-                    logout()
+                .sheet(isPresented: $showingShiftWebLogin) {
+                    ShiftWebLoginView { success in
+                        if success {
+                            appState.isLoggedIn = true
+                        }
+                    }
                 }
-            } message: {
-                Text("ShiftWebからログアウトしますか？")
-            }
-            .alert("新しいカレンダーを作成", isPresented: $showingNewCalendarAlert) {
-                TextField("カレンダー名", text: $newCalendarName)
-                Button("キャンセル", role: .cancel) {
-                    newCalendarName = ""
+                .sheet(isPresented: $showingExportSheet) {
+                    if let url = exportURL {
+                        ShareSheet(items: [url])
+                    }
                 }
-                Button("作成") {
-                    createNewCalendar()
+                .alert("ログアウト", isPresented: $showingLogoutConfirm) {
+                    Button("キャンセル", role: .cancel) {}
+                    Button("ログアウト", role: .destructive) {
+                        logout()
+                    }
+                } message: {
+                    Text("ShiftWebからログアウトしますか？")
                 }
-            } message: {
-                Text("シフト用のカレンダー名を入力してください")
-            }
-            .alert("エラー", isPresented: .constant(alertError != nil)) {
-                Button("OK") { alertError = nil }
-            } message: {
-                Text(alertError ?? "")
-            }
-            .sheet(isPresented: $showingAutomationGuide) {
-                AutomationGuideView()
+                .alert("新しいカレンダーを作成", isPresented: $showingNewCalendarAlert) {
+                    TextField("カレンダー名", text: $newCalendarName)
+                    Button("キャンセル", role: .cancel) {
+                        newCalendarName = ""
+                    }
+                    Button("作成") {
+                        createNewCalendar()
+                    }
+                } message: {
+                    Text("シフト用のカレンダー名を入力してください")
+                }
+                .alert("エラー", isPresented: .constant(alertError != nil)) {
+                    Button("OK") { alertError = nil }
+                } message: {
+                    Text(alertError ?? "")
+                }
+                .sheet(isPresented: $showingAutomationGuide) {
+                    AutomationGuideView()
+                }
             }
         }
     }
@@ -437,6 +467,25 @@ struct SettingsView: View {
         
         // 同期履歴を読み込み
         syncHistory = SyncHistoryManager.shared.getHistory()
+    }
+
+    private func scrollToInitialTargetIfNeeded(using proxy: ScrollViewProxy) {
+        guard !hasAppliedInitialScroll, let target = initialScrollTarget else { return }
+        hasAppliedInitialScroll = true
+
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            withAnimation(.easeInOut(duration: 0.35)) {
+                proxy.scrollTo(target, anchor: .center)
+            }
+            withAnimation(.easeInOut(duration: 0.2)) {
+                highlightedScrollTarget = target
+            }
+            try? await Task.sleep(nanoseconds: 1_800_000_000)
+            withAnimation(.easeOut(duration: 0.35)) {
+                highlightedScrollTarget = nil
+            }
+        }
     }
     
     private func signInGoogle() {
@@ -740,6 +789,10 @@ struct SettingsView: View {
         UserDefaults.standard.removeObject(forKey: "lastSyncDate")
         appState.shifts = []
         appState.lastSyncDate = nil
+    }
+
+    private func resetTimecardGuide() {
+        UserDefaults.standard.removeObject(forKey: AppPreferenceKeys.hasSeenTimecardGuide)
     }
     
     private func modifyFirstShiftTime() {

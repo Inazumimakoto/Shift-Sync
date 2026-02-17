@@ -253,17 +253,17 @@ struct SettingsView: View {
                             }
                         }
                         .pickerStyle(.menu)
-                        .id(SettingsScrollTarget.launchDestination)
-                        .listRowBackground(
-                            highlightedScrollTarget == .launchDestination
-                            ? Color.orange.opacity(0.18)
-                            : Color.clear
-                        )
+                        .padding(.vertical, 4)
+                        .background {
+                            if highlightedScrollTarget == .launchDestination {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.orange.opacity(0.16))
+                            }
+                        }
                         .overlay {
                             if highlightedScrollTarget == .launchDestination {
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(Color.orange, lineWidth: 1.5)
-                                    .padding(.vertical, 4)
                             }
                         }
                     } header: {
@@ -271,6 +271,7 @@ struct SettingsView: View {
                     } footer: {
                         Text("アプリ起動時に最初に開く画面を選べます")
                     }
+                    .id(SettingsScrollTarget.launchDestination)
                 
                 // アプリ情報
                 Section {
@@ -474,15 +475,20 @@ struct SettingsView: View {
         hasAppliedInitialScroll = true
 
         Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 250_000_000)
-            withAnimation(.easeInOut(duration: 0.35)) {
-                proxy.scrollTo(target, anchor: .center)
+            // Sheet表示直後はListが未レイアウトなことがあるため、数回リトライする
+            for attempt in 0..<3 {
+                let delay: UInt64 = (attempt == 0) ? 220_000_000 : 180_000_000
+                try? await Task.sleep(nanoseconds: delay)
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    proxy.scrollTo(target, anchor: .center)
+                }
             }
-            withAnimation(.easeInOut(duration: 0.2)) {
+
+            withAnimation(.easeInOut(duration: 0.18)) {
                 highlightedScrollTarget = target
             }
-            try? await Task.sleep(nanoseconds: 1_800_000_000)
-            withAnimation(.easeOut(duration: 0.35)) {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            withAnimation(.easeOut(duration: 0.25)) {
                 highlightedScrollTarget = nil
             }
         }

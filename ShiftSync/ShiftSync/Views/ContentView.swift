@@ -370,12 +370,12 @@ struct TimecardPageView: View {
     @AppStorage(AppPreferenceKeys.hasSeenTimecardGuide) private var hasSeenTimecardGuide = false
     @State private var isLoading = true
     @State private var errorMessage: String?
-    @State private var showingTimecardGuide = false
+    @State private var showingTimecardGuideBanner = false
 
     let onOpenLaunchDestinationSettings: () -> Void
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .top) {
             Color(uiColor: .systemBackground)
                 .ignoresSafeArea(edges: [.top, .bottom])
 
@@ -404,6 +404,21 @@ struct TimecardPageView: View {
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+
+            if showingTimecardGuideBanner {
+                TimecardGuideBanner {
+                    dismissGuideBanner()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        onOpenLaunchDestinationSettings()
+                    }
+                } onDismiss: {
+                    dismissGuideBanner()
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(2)
+            }
         }
         .alert("打刻ページエラー", isPresented: .constant(errorMessage != nil)) {
             Button("OK") { errorMessage = nil }
@@ -413,51 +428,65 @@ struct TimecardPageView: View {
         .onAppear {
             showTimecardGuideIfNeeded()
         }
-        .sheet(isPresented: $showingTimecardGuide) {
-            TimecardGuideSheet {
-                showingTimecardGuide = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    onOpenLaunchDestinationSettings()
-                }
-            } onDismiss: {
-                showingTimecardGuide = false
-            }
-            .presentationDetents([.height(230)])
-            .presentationDragIndicator(.visible)
-        }
     }
 
     private func showTimecardGuideIfNeeded() {
         guard !hasSeenTimecardGuide else { return }
         hasSeenTimecardGuide = true
-        showingTimecardGuide = true
+        withAnimation(.easeInOut(duration: 0.25)) {
+            showingTimecardGuideBanner = true
+        }
+    }
+
+    private func dismissGuideBanner() {
+        withAnimation(.easeOut(duration: 0.2)) {
+            showingTimecardGuideBanner = false
+        }
     }
 }
 
-private struct TimecardGuideSheet: View {
+private struct TimecardGuideBanner: View {
     let onOpenSettings: () -> Void
     let onDismiss: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Label("このページを起動時の最初にできます", systemImage: "lightbulb.max.fill")
-                .font(.headline)
-                .foregroundStyle(.orange)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "sparkles.rectangle.stack")
+                    .foregroundStyle(.orange)
+                    .font(.headline)
 
-            Text("「設定 > 起動時に表示」で「打刻ページ」を選ぶと、次回から起動直後にこのページを開けます。")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("起動時の最初のページを変更できます")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    Text("設定 > 起動時に表示 で「打刻ページ」を選択")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
 
-            HStack(spacing: 10) {
-                Button("あとで", action: onDismiss)
-                    .buttonStyle(.bordered)
+                Spacer(minLength: 0)
 
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+
+            HStack {
+                Spacer()
                 Button("設定を開く", action: onOpenSettings)
                     .buttonStyle(.borderedProminent)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
+        .padding(12)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.orange.opacity(0.55), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
     }
 }
 

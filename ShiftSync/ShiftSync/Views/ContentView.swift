@@ -478,9 +478,15 @@ private struct TimecardGuideBanner: View {
                     Text("Safariが汚れなくて済みます。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text("Tips: 「設定 > 起動時に表示」で、打刻ページを最初に開けます。")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        Image(systemName: "lightbulb.fill")
+                            .font(.caption2)
+                            .foregroundStyle(Color.accentColor)
+                        Text("Tips: 「設定 > 起動時に表示」で、打刻ページを最初に開けます。")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.accentColor)
+                    }
                 }
 
                 Spacer(minLength: 0)

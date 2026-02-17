@@ -375,7 +375,7 @@ struct TimecardPageView: View {
     let onOpenLaunchDestinationSettings: () -> Void
 
     var body: some View {
-        ZStack(alignment: .top) {
+        ZStack {
             Color(uiColor: .systemBackground)
                 .ignoresSafeArea(edges: [.top, .bottom])
 
@@ -404,7 +404,8 @@ struct TimecardPageView: View {
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-
+        }
+        .overlay(alignment: .top) {
             if showingTimecardGuideBanner {
                 TimecardGuideBanner {
                     dismissGuideBanner()

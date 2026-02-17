@@ -470,10 +470,10 @@ private struct TimecardGuideBanner: View {
                     .font(.headline)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("出勤・休憩・退勤の打刻が、このアプリでできるようになりました。")
+                    Text("出勤・休憩・退勤の打刻はこのアプリでできます。")
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                    Text("Tips: 「設定 > 起動時に表示」で、打刻ページを最初に開けます。")
+                    Text("Safariが汚れなくて済みます。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

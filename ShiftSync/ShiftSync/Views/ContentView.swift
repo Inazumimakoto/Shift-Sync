@@ -441,7 +441,7 @@ struct TimecardPageView: View {
 
         timecardGuideTask = Task { @MainActor in
             defer { timecardGuideTask = nil }
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
             guard !Task.isCancelled, !hasSeenTimecardGuide else { return }
 
             hasSeenTimecardGuide = true
@@ -470,10 +470,10 @@ private struct TimecardGuideBanner: View {
                     .font(.headline)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("このアプリで出勤打刻・休憩・退勤ができるようになりました！")
+                    Text("出勤・休憩・退勤の打刻が、このアプリでできるようになりました。")
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                    Text("設定から、起動時に表示するページを変更できます。")
+                    Text("Tips: 「設定 > 起動時に表示」で、打刻ページを最初に開けます。")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

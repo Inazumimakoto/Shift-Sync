@@ -466,7 +466,7 @@ private struct TimecardGuideBanner: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "sparkles.rectangle.stack")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.accentColor)
                     .font(.headline)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -502,7 +502,7 @@ private struct TimecardGuideBanner: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
         .overlay {
             RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.orange.opacity(0.55), lineWidth: 1)
+                .stroke(Color.accentColor.opacity(0.55), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 2)
     }

@@ -18,6 +18,9 @@ struct ShiftParser {
         
         // シフトテーブルを取得
         guard let table = try doc.select("table#shiftTable").first() else {
+            if ShiftWebPageInspector.isLoginPageHTML(html) {
+                throw ShiftWebError.authenticationFailed("ShiftWebの認証が無効です。設定から再ログインしてください。")
+            }
             throw ShiftWebError.parseFailed("shiftTable が見つかりませんでした")
         }
         

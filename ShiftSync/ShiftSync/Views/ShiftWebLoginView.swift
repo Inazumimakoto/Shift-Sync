@@ -3,36 +3,61 @@ import WebKit
 
 /// WebViewでShiftWebにログインし、Face ID自動入力を利用してID/パスワードを取得
 struct ShiftWebLoginView: View {
+    let promptMessage: String?
     let onComplete: (Bool) -> Void
     
     @Environment(\.dismiss) var dismiss
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var extractedCredentials: (id: String, password: String)?
+
+    init(promptMessage: String? = nil, onComplete: @escaping (Bool) -> Void) {
+        self.promptMessage = promptMessage
+        self.onComplete = onComplete
+    }
     
     var body: some View {
         NavigationStack {
-            ZStack {
-                ShiftWebWebView(
-                    isLoading: $isLoading,
-                    extractedCredentials: $extractedCredentials,
-                    onLoginSuccess: { id, password in
-                        saveCredentialsAndDismiss(id: id, password: password)
-                    },
-                    onError: { error in
-                        errorMessage = error
+            VStack(spacing: 0) {
+                if let promptMessage, !promptMessage.isEmpty {
+                    Text(promptMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.orange.opacity(0.15))
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                }
+
+                ZStack {
+                    ShiftWebWebView(
+                        isLoading: $isLoading,
+                        extractedCredentials: $extractedCredentials,
+                        onLoginSuccess: { id, password in
+                            saveCredentialsAndDismiss(id: id, password: password)
+                        },
+                        onError: { error in
+                            errorMessage = error
+                        }
+                    )
+
+                    if isLoading {
+                        ProgressView("読み込み中...")
+                            .padding()
+                            .background(.ultraThinMaterial)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-                )
-                
-                if isLoading {
-                    ProgressView("読み込み中...")
-                        .padding()
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
             .navigationTitle("ShiftWebログイン")
             .navigationBarTitleDisplayMode(.inline)
+            .interactiveDismissDisabled()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("キャンセル") {
@@ -185,6 +210,47 @@ struct ShiftWebWebView: UIViewRepresentable {
                 }
             }
         }
+
+        function normalizeMessage(message) {
+            if (!message) {
+                return '';
+            }
+            return message
+                .replace(/<br\\s*\\/?>/gi, '\\n')
+                .replace(/<[^>]*>/g, '')
+                .replace(/&nbsp;/g, ' ')
+                .trim();
+        }
+
+        function postLoginResult(success, message) {
+            try {
+                window.webkit.messageHandlers.loginHandler.postMessage({
+                    type: success ? 'loginSuccess' : 'loginFailure',
+                    message: normalizeMessage(message || '')
+                });
+            } catch(e) {
+                console.error('Failed to send login result:', e);
+            }
+        }
+
+        function handleLoginResponse(status, responseText) {
+            console.log('Login API response:', status, responseText);
+            if (status !== 200) {
+                postLoginResult(false, 'ログインに失敗しました。');
+                return;
+            }
+
+            try {
+                var parsed = JSON.parse(responseText);
+                if (parsed && parsed.cookie === true) {
+                    postLoginResult(true, parsed.msg || '');
+                } else {
+                    postLoginResult(false, parsed ? parsed.msg : 'ログインに失敗しました。');
+                }
+            } catch (e) {
+                postLoginResult(false, 'ログイン結果を確認できませんでした。');
+            }
+        }
         
         // XMLHttpRequestをフック（AJAXログインを検出）
         var originalXHR = window.XMLHttpRequest;
@@ -207,15 +273,7 @@ struct ShiftWebWebView: UIViewRepresentable {
                     // レスポンスを監視
                     var self = this;
                     this.addEventListener('load', function() {
-                        console.log('Login API response:', self.status, self.responseText);
-                        if (self.status === 200) {
-                            // ログイン成功を通知
-                            try {
-                                window.webkit.messageHandlers.loginHandler.postMessage({
-                                    type: 'loginSuccess'
-                                });
-                            } catch(e) {}
-                        }
+                        handleLoginResponse(self.status, self.responseText || '');
                     });
                 }
                 return originalSend.apply(this, arguments);
@@ -232,12 +290,12 @@ struct ShiftWebWebView: UIViewRepresentable {
                 captureCredentials();
             }
             return originalFetch.apply(this, arguments).then(function(response) {
-                if (url && url.toString().includes('check_login') && response.ok) {
-                    try {
-                        window.webkit.messageHandlers.loginHandler.postMessage({
-                            type: 'loginSuccess'
-                        });
-                    } catch(e) {}
+                if (url && url.toString().includes('check_login')) {
+                    response.clone().text().then(function(text) {
+                        handleLoginResponse(response.status, text || '');
+                    }).catch(function() {
+                        postLoginResult(false, 'ログイン結果を確認できませんでした。');
+                    });
                 }
                 return response;
             });
@@ -267,7 +325,7 @@ struct ShiftWebWebView: UIViewRepresentable {
         }
         
         // JavaScriptからのメッセージを受信
-        nonisolated func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
             guard message.name == "loginHandler" else { return }
             
             if let body = message.body as? [String: String] {
@@ -278,6 +336,14 @@ struct ShiftWebWebView: UIViewRepresentable {
                             self.hasCompletedLogin = true
                             self.parent.onLoginSuccess(creds.id, creds.password)
                         }
+                    }
+                    return
+                }
+
+                if body["type"] == "loginFailure" {
+                    Task { @MainActor in
+                        let message = ShiftWebPageInspector.sanitizedMessage(body["message"]) ?? "ログインに失敗しました。IDとパスワードを確認してください。"
+                        self.parent.onError(message)
                     }
                     return
                 }
@@ -320,17 +386,7 @@ struct ShiftWebWebView: UIViewRepresentable {
             let isShiftWebSite = url.contains("ams-app.club")
             
             if isShiftWebSite && !isLoginPage && !hasCompletedLogin {
-                // ログインページ以外のShiftWebページに遷移 = ログイン成功
-                hasCompletedLogin = true
-                
-                if let creds = capturedCredentials {
-                    Task { @MainActor in
-                        self.parent.onLoginSuccess(creds.id, creds.password)
-                    }
-                } else {
-                    // 認証情報がない場合、ページからログイン状態を確認
-                    checkLoginStatus(webView)
-                }
+                checkLoginStatus(webView)
             }
         }
         
@@ -348,8 +404,15 @@ struct ShiftWebWebView: UIViewRepresentable {
             webView.evaluateJavaScript(js) { [weak self] result, error in
                 if let isLoggedIn = result as? Bool, isLoggedIn {
                     Task { @MainActor in
-                        // ログイン成功だが認証情報がない - エラーを表示
-                        self?.parent.onError("ログインは成功しましたが、認証情報を保存できませんでした。再度ログインしてください。")
+                        guard let self else { return }
+                        guard !self.hasCompletedLogin else { return }
+
+                        if let creds = self.capturedCredentials {
+                            self.hasCompletedLogin = true
+                            self.parent.onLoginSuccess(creds.id, creds.password)
+                        } else {
+                            self.parent.onError("ログインは成功しましたが、認証情報を保存できませんでした。再度ログインしてください。")
+                        }
                     }
                 }
             }

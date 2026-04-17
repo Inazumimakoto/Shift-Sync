@@ -41,7 +41,7 @@ class ShiftWebClient {
         request.setValue("\(baseURL)/login.php?err=1", forHTTPHeaderField: "Referer")
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         
-        let body = "id=\(id.urlEncoded)&password=\(password.urlEncoded)&savelogin=1"
+        let body = "id=\(id.formURLEncoded)&password=\(password.formURLEncoded)&savelogin=1"
         request.httpBody = body.data(using: .utf8)
         
         let (data, response) = try await session.data(for: request)
@@ -53,6 +53,14 @@ class ShiftWebClient {
         
         let responseText = String(data: data, encoding: .utf8) ?? ""
         print("login API response: \(responseText)")
+
+        guard let loginResponse = try? JSONDecoder().decode(ShiftWebLoginResponse.self, from: data) else {
+            throw ShiftWebError.loginFailed
+        }
+
+        guard loginResponse.cookie == true else {
+            throw ShiftWebError.authenticationFailed(ShiftWebPageInspector.sanitizedMessage(loginResponse.msg))
+        }
     }
     
     /// 指定月のシフトページを取得
@@ -78,6 +86,11 @@ class ShiftWebClient {
         
         let html = String(data: data, encoding: .utf8) ?? ""
         print("shift status (\(date2)): \(httpResponse.statusCode)")
+
+        if ShiftWebPageInspector.isLoginPageHTML(html) {
+            throw ShiftWebError.authenticationFailed("ShiftWebの認証が無効です。設定から再ログインしてください。")
+        }
+
         return html
     }
     
@@ -132,13 +145,29 @@ class ShiftWebClient {
 
 enum ShiftWebError: Error, LocalizedError {
     case loginFailed
+    case authenticationFailed(String?)
     case fetchFailed(year: Int, month: Int)
     case parseFailed(String)
+
+    var requiresReauthentication: Bool {
+        switch self {
+        case .authenticationFailed:
+            return true
+        default:
+            return false
+        }
+    }
     
     var errorDescription: String? {
         switch self {
         case .loginFailed:
-            return "ShiftWebへのログインに失敗しました"
+            return "ログインに失敗しました。再ログインしてください。"
+        case .authenticationFailed(let message):
+            let base = "ログインに失敗しました。再ログインしてください。"
+            guard let message, !message.isEmpty else {
+                return base
+            }
+            return "\(base)\n\(message)"
         case .fetchFailed(let year, let month):
             return "\(year)年\(month)月のシフト取得に失敗しました"
         case .parseFailed(let reason):
@@ -147,8 +176,38 @@ enum ShiftWebError: Error, LocalizedError {
     }
 }
 
-private extension String {
-    var urlEncoded: String {
-        self.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? self
+private struct ShiftWebLoginResponse: Decodable {
+    let msg: String?
+    let cookie: Bool?
+}
+
+enum ShiftWebPageInspector {
+    static func isLoginPageHTML(_ html: String) -> Bool {
+        html.contains("id=\"loginBody\"") ||
+        html.contains("id=\"loginForm2\"") ||
+        html.contains("ログインv2")
     }
+
+    static func sanitizedMessage(_ raw: String?) -> String? {
+        guard var raw else { return nil }
+        raw = raw.replacingOccurrences(of: "<br\\s*/?>", with: "\n", options: .regularExpression)
+        raw = raw.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+        raw = raw.replacingOccurrences(of: "&nbsp;", with: " ")
+        let cleaned = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        return cleaned.isEmpty ? nil : cleaned
+    }
+}
+
+private extension String {
+    var formURLEncoded: String {
+        self.addingPercentEncoding(withAllowedCharacters: .formURLQueryAllowed) ?? self
+    }
+}
+
+private extension CharacterSet {
+    static let formURLQueryAllowed: CharacterSet = {
+        var allowed = CharacterSet.urlQueryAllowed
+        allowed.remove(charactersIn: "&=+")
+        return allowed
+    }()
 }

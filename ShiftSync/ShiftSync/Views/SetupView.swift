@@ -4,6 +4,7 @@ import EventKit
 struct SetupView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) var dismiss
+    @AppStorage(AppPreferenceKeys.hasCompletedInitialSetup) private var hasCompletedInitialSetup = false
     
     @State private var currentStep = 0
     @State private var showingShiftWebLogin = false
@@ -387,6 +388,8 @@ struct SetupView: View {
     }
     
     private func completeSetup() {
+        hasCompletedInitialSetup = true
+
         if let selected = selectedCalendar {
             SharedStorage.setStringSetting(selected.id, forKey: SharedStorage.selectedICloudCalendarKey)
             appState.selectedICloudCalendar = selected.id

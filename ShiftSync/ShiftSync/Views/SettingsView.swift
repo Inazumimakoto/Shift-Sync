@@ -19,6 +19,7 @@ struct SettingsView: View {
     @State private var showingNewCalendarAlert = false
     @State private var newCalendarName = ""
     @State private var alertError: String?
+    @State private var isRefreshingShiftWeb = false
     
     // Google Calendar
     @State private var googleCalendars: [GoogleCalendar] = []
@@ -224,6 +225,19 @@ struct SettingsView: View {
                             Text("接続済み")
                                 .foregroundStyle(.secondary)
                         }
+
+                        Button {
+                            showingShiftWebLogin = true
+                        } label: {
+                            HStack {
+                                Label("再ログインして同期", systemImage: "arrow.clockwise.circle")
+                                Spacer()
+                                if isRefreshingShiftWeb {
+                                    ProgressView()
+                                }
+                            }
+                        }
+                        .disabled(isRefreshingShiftWeb)
                         
                         Button(role: .destructive) {
                             showingLogoutConfirm = true
@@ -234,13 +248,22 @@ struct SettingsView: View {
                         Button {
                             showingShiftWebLogin = true
                         } label: {
-                            Label("ShiftWeb にログイン", systemImage: "person.badge.key")
+                            HStack {
+                                Label("ShiftWeb にログイン", systemImage: "person.badge.key")
+                                Spacer()
+                                if isRefreshingShiftWeb {
+                                    ProgressView()
+                                }
+                            }
                         }
+                        .disabled(isRefreshingShiftWeb)
                     }
                 } header: {
                     Text("ShiftWeb")
                 } footer: {
-                    if !appState.isLoggedIn {
+                    if isRefreshingShiftWeb {
+                        Text("再ログイン後に最新のシフトを同期しています")
+                    } else if !appState.isLoggedIn {
                         Text("シフトを取得するにはShiftWebへのログインが必要です")
                     }
                 }
@@ -405,7 +428,7 @@ struct SettingsView: View {
                 .sheet(isPresented: $showingShiftWebLogin) {
                     ShiftWebLoginView { success in
                         if success {
-                            appState.isLoggedIn = true
+                            handleShiftWebLoginSuccess()
                         }
                     }
                 }
@@ -608,9 +631,30 @@ struct SettingsView: View {
         do {
             try KeychainService.shared.deleteShiftWebCredentials()
             appState.isLoggedIn = false
-            appState.shifts = []
         } catch {
             print("ログアウトエラー: \(error)")
+        }
+    }
+
+    private func handleShiftWebLoginSuccess() {
+        appState.isLoggedIn = true
+        isRefreshingShiftWeb = true
+
+        Task {
+            do {
+                _ = try await BackgroundTaskManager.shared.performSync(source: .manual)
+
+                await MainActor.run {
+                    appState.shifts = SharedStorage.loadShifts()
+                    appState.lastSyncDate = SharedStorage.loadLastSyncDate()
+                    isRefreshingShiftWeb = false
+                }
+            } catch {
+                await MainActor.run {
+                    alertError = error.localizedDescription
+                    isRefreshingShiftWeb = false
+                }
+            }
         }
     }
     

@@ -40,6 +40,7 @@ enum LaunchDestination: String, CaseIterable, Identifiable {
 
 enum AppPreferenceKeys {
     static let hasSeenTimecardGuide = "hasSeenTimecardGuide"
+    static let hasCompletedInitialSetup = "hasCompletedInitialSetup"
 }
 
 enum SettingsScrollTarget: Hashable {
@@ -49,14 +50,18 @@ enum SettingsScrollTarget: Hashable {
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
     @AppStorage(LaunchDestination.storageKey) private var launchDestinationRawValue = LaunchDestination.shifts.rawValue
+    @AppStorage(AppPreferenceKeys.hasCompletedInitialSetup) private var hasCompletedInitialSetup = false
 
     @State private var selectedTab: LaunchDestination = .shifts
     @State private var didApplyInitialTab = false
     @State private var isSyncing = false
     @State private var showingSettings = false
-    @State private var settingsScrollTarget: SettingsScrollTarget?
+    @State private var showingShiftWebLogin = false
     @State private var showingSetup = false
+    @State private var settingsScrollTarget: SettingsScrollTarget?
     @State private var syncError: String?
+    @State private var syncErrorRequiresReLogin = false
+    @State private var shouldSyncAfterShiftWebLogin = false
     
     var body: some View {
         NavigationStack {
@@ -94,15 +99,20 @@ struct ContentView: View {
             }) {
                 SettingsView(initialScrollTarget: settingsScrollTarget)
             }
+            .sheet(isPresented: $showingShiftWebLogin) {
+                ShiftWebLoginView { success in
+                    handleShiftWebLoginCompletion(success: success)
+                }
+            }
             .fullScreenCover(isPresented: $showingSetup) {
                 SetupView()
             }
             .onAppear {
                 applyInitialTabIfNeeded()
-                if !appState.isLoggedIn {
+                loadShiftsFromStorage()
+                if !hasCompletedInitialSetup {
                     showingSetup = true
-                } else {
-                    loadShiftsFromStorage()
+                } else if appState.isLoggedIn {
                     // 1時間以上経過していたら自動同期
                     autoSyncIfNeeded()
                 }
@@ -116,11 +126,27 @@ struct ContentView: View {
                 selectedTab = destination
             }
             .alert("同期エラー", isPresented: .constant(syncError != nil)) {
-                Button("OK") { syncError = nil }
+                if syncErrorRequiresReLogin {
+                    Button("キャンセル", role: .cancel) {
+                        syncError = nil
+                        syncErrorRequiresReLogin = false
+                    }
+                    Button("再ログイン") {
+                        openShiftWebLoginForRetry()
+                    }
+                } else {
+                    Button("OK") {
+                        syncError = nil
+                    }
+                }
             } message: {
                 Text(syncError ?? "")
             }
         }
+    }
+
+    private var defaultReLoginErrorMessage: String {
+        "ログインに失敗しました。再ログインしてください。"
     }
 
     private var shiftTabView: some View {
@@ -259,7 +285,7 @@ struct ContentView: View {
             .clipShape(Capsule())
             .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
         }
-        .disabled(isSyncing || !appState.isLoggedIn)
+        .disabled(isSyncing)
     }
     
     // MARK: - Actions
@@ -282,6 +308,17 @@ struct ContentView: View {
         if appState.isDemoMode {
             return
         }
+
+        do {
+            _ = try KeychainService.shared.getShiftWebCredentials()
+        } catch KeychainError.notFound {
+            presentReLoginAlert()
+            return
+        } catch {
+            syncError = error.localizedDescription
+            syncErrorRequiresReLogin = false
+            return
+        }
         
         isSyncing = true
         
@@ -296,8 +333,13 @@ struct ContentView: View {
                 }
             } catch {
                 await MainActor.run {
-                    syncError = error.localizedDescription
                     isSyncing = false
+                    if let shiftWebError = error as? ShiftWebError, shiftWebError.requiresReauthentication {
+                        presentReLoginAlert(message: shiftWebError.localizedDescription ?? defaultReLoginErrorMessage)
+                    } else {
+                        syncError = error.localizedDescription
+                        syncErrorRequiresReLogin = false
+                    }
                 }
             }
         }
@@ -325,6 +367,33 @@ struct ContentView: View {
         appState.shifts = SharedStorage.loadShifts()
         if let lastSync = SharedStorage.loadLastSyncDate() {
             appState.lastSyncDate = lastSync
+        }
+    }
+
+    private func presentReLoginAlert(message: String? = nil) {
+        appState.isLoggedIn = false
+        isSyncing = false
+        syncError = message ?? defaultReLoginErrorMessage
+        syncErrorRequiresReLogin = true
+        shouldSyncAfterShiftWebLogin = true
+    }
+
+    private func openShiftWebLoginForRetry() {
+        syncError = nil
+        syncErrorRequiresReLogin = false
+        showingShiftWebLogin = true
+    }
+
+    private func handleShiftWebLoginCompletion(success: Bool) {
+        let shouldRetry = shouldSyncAfterShiftWebLogin
+        shouldSyncAfterShiftWebLogin = false
+
+        guard success else { return }
+
+        appState.isLoggedIn = true
+
+        if shouldRetry {
+            performSync()
         }
     }
 }

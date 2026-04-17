@@ -109,6 +109,7 @@ struct ContentView: View {
             }
             .onAppear {
                 applyInitialTabIfNeeded()
+                migrateInitialSetupStateIfNeeded()
                 loadShiftsFromStorage()
                 if !hasCompletedInitialSetup {
                     showingSetup = true
@@ -294,6 +295,30 @@ struct ContentView: View {
         guard !didApplyInitialTab else { return }
         selectedTab = LaunchDestination(rawValue: launchDestinationRawValue) ?? .shifts
         didApplyInitialTab = true
+    }
+
+    private func migrateInitialSetupStateIfNeeded() {
+        let defaults = UserDefaults.standard
+        guard defaults.object(forKey: AppPreferenceKeys.hasCompletedInitialSetup) == nil else {
+            return
+        }
+
+        let legacyKeys = [
+            SharedStorage.savedShiftsKey,
+            SharedStorage.lastSyncDateKey,
+            SharedStorage.iCloudEnabledKey,
+            SharedStorage.googleEnabledKey,
+            SharedStorage.selectedICloudCalendarKey,
+            SharedStorage.selectedGoogleCalendarKey,
+            LaunchDestination.storageKey,
+            AppPreferenceKeys.hasSeenTimecardGuide,
+            "isDemoMode"
+        ]
+
+        let hasLegacyUsage = legacyKeys.contains { defaults.object(forKey: $0) != nil }
+        if hasLegacyUsage {
+            hasCompletedInitialSetup = true
+        }
     }
 
     private func openLaunchDestinationSettings() {

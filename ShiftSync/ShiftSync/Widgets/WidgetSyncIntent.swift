@@ -10,7 +10,7 @@ struct WidgetSyncIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         do {
-            _ = try await BackgroundTaskManager.shared.performSync(source: .manual)
+            _ = try await BackgroundTaskManager.shared.performSync(source: .widgetButton)
             return .result()
         } catch {
             // ボタン操作時は静かに失敗させる（アプリを開かない）

@@ -70,16 +70,17 @@ class BackgroundTaskManager {
     
     /// 同期処理を実行
     /// - Parameter source: 同期ソース（手動/バックグラウンド/オートメーション）
-    func performSync(source: SyncSource = .manual) async throws -> SyncResult {
+    func performSync(source: SyncSource = .manualButton) async throws -> SyncResult {
+        let logger = SyncHistoryManager.shared.beginRun(source: source)
         do {
             // Keychainからパスワードを取得
             let credentials = try KeychainService.shared.getShiftWebCredentials()
             
             // ShiftWebにログイン
-            try await ShiftWebClient.shared.login(id: credentials.id, password: credentials.password)
+            try await ShiftWebClient.shared.login(id: credentials.id, password: credentials.password, logger: logger)
             
             // シフトを取得
-            let newShifts = try await ShiftWebClient.shared.fetchCurrentAndNextMonthShifts()
+            let newShifts = try await ShiftWebClient.shared.fetchCurrentAndNextMonthShifts(logger: logger)
             
             // 前回のシフトと比較して変更を検出
             let previousShifts = loadPreviousShifts()
@@ -98,23 +99,61 @@ class BackgroundTaskManager {
                CalendarService.shared.hasAccess,
                let calendarID = SharedStorage.stringSetting(forKey: SharedStorage.selectedICloudCalendarKey),
                let calendar = CalendarService.shared.getCalendars().first(where: { $0.calendarIdentifier == calendarID }) {
-                result = try CalendarService.shared.syncShifts(newShifts, to: calendar)
+                logger.addStep(phase: .calendarSync, status: .started, message: "iCloudカレンダー同期開始")
+                do {
+                    result = try CalendarService.shared.syncShifts(newShifts, to: calendar)
+                    logger.addStep(
+                        phase: .calendarSync,
+                        status: .success,
+                        message: "iCloudカレンダー同期成功 / \(result.summary)"
+                    )
+                } catch {
+                    logger.addStep(
+                        phase: .calendarSync,
+                        status: .failure,
+                        message: "iCloudカレンダー同期失敗",
+                        errorMessage: error.localizedDescription
+                    )
+                    throw error
+                }
+            } else {
+                logger.addStep(phase: .calendarSync, status: .info, message: "iCloudカレンダー同期スキップ")
             }
             
             // Google カレンダー同期
             if googleEnabled,
                GoogleCalendarService.shared.isSignedIn,
                let googleCalendarID = SharedStorage.stringSetting(forKey: SharedStorage.selectedGoogleCalendarKey) {
-                let googleResult = try await GoogleCalendarService.shared.syncShifts(newShifts, to: googleCalendarID)
+                logger.addStep(phase: .calendarSync, status: .started, message: "Googleカレンダー同期開始")
+                let googleResult: SyncResult
+                do {
+                    googleResult = try await GoogleCalendarService.shared.syncShifts(newShifts, to: googleCalendarID)
+                    logger.addStep(
+                        phase: .calendarSync,
+                        status: .success,
+                        message: "Googleカレンダー同期成功 / \(googleResult.summary)"
+                    )
+                } catch {
+                    logger.addStep(
+                        phase: .calendarSync,
+                        status: .failure,
+                        message: "Googleカレンダー同期失敗",
+                        errorMessage: error.localizedDescription
+                    )
+                    throw error
+                }
                 result.added += googleResult.added
                 result.updated += googleResult.updated
                 result.deleted += googleResult.deleted
                 result.addedShifts = mergeUniqueShifts(result.addedShifts, googleResult.addedShifts)
                 result.updatedShifts = mergeUniqueShifts(result.updatedShifts, googleResult.updatedShifts)
                 result.deletedShifts = mergeUniqueShifts(result.deletedShifts, googleResult.deletedShifts)
+            } else {
+                logger.addStep(phase: .calendarSync, status: .info, message: "Googleカレンダー同期スキップ")
             }
             
             // 新しいシフトを保存（取得範囲内は置き換え）
+            logger.addStep(phase: .saveStorage, status: .started, message: "保存開始")
             let updatedShifts = SharedStorage.replaceShiftsInCurrentSyncRange(
                 existing: previousShifts,
                 incoming: newShifts
@@ -124,9 +163,10 @@ class BackgroundTaskManager {
             // 最終同期日時を更新
             let lastSyncDate = Date()
             SharedStorage.saveLastSyncDate(lastSyncDate)
+            logger.addStep(phase: .saveStorage, status: .success, message: "保存成功 / \(updatedShifts.count)件")
             
             // 同期履歴を記録
-            SyncHistoryManager.shared.logSuccess(source: source, result: result)
+            logger.finishSuccess(result: result)
 
 #if canImport(WidgetKit)
             WidgetCenter.shared.reloadAllTimelines()
@@ -135,7 +175,7 @@ class BackgroundTaskManager {
             return result
         } catch {
             // エラー時も履歴を記録
-            SyncHistoryManager.shared.logFailure(source: source, error: error)
+            logger.finishFailure(error: error)
             throw error
         }
     }

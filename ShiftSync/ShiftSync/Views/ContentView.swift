@@ -326,7 +326,7 @@ struct ContentView: View {
         showingSettings = true
     }
 
-    private func performSync() {
+    private func performSync(source: SyncSource = .manualButton) {
         guard !isSyncing else { return }
         
         // デモモードでは同期をスキップ
@@ -349,7 +349,7 @@ struct ContentView: View {
         
         Task {
             do {
-                _ = try await BackgroundTaskManager.shared.performSync(source: .manual)
+                _ = try await BackgroundTaskManager.shared.performSync(source: source)
                 
                 await MainActor.run {
                     appState.shifts = SharedStorage.loadShifts()
@@ -385,7 +385,7 @@ struct ContentView: View {
         }
         
         // バックグラウンドで同期実行
-        performSync()
+        performSync(source: .launchAuto)
     }
     
     private func loadShiftsFromStorage() {
@@ -418,7 +418,7 @@ struct ContentView: View {
         appState.isLoggedIn = true
 
         if shouldRetry {
-            performSync()
+            performSync(source: .reloginRetry)
         }
     }
 }

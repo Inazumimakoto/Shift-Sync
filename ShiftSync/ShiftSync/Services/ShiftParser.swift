@@ -5,7 +5,7 @@ import SwiftSoup
 /// Go版: parseShifts (main.go:740-815)
 struct ShiftParser {
     
-    static func parseShifts(html: String) throws -> [Shift] {
+    static func parseShifts(html: String, year requestedYear: Int? = nil, month requestedMonth: Int? = nil) throws -> [Shift] {
         let doc = try SwiftSoup.parse(html)
         
         // ヘッダーから年を取得
@@ -20,6 +20,14 @@ struct ShiftParser {
         guard let table = try doc.select("table#shiftTable").first() else {
             if ShiftWebPageInspector.isLoginPageHTML(html) {
                 throw ShiftWebError.authenticationFailed("ShiftWebの認証が無効です。設定から再ログインしてください。")
+            }
+            if let requestedYear, let requestedMonth {
+                throw ShiftWebError.monthParseFailed(
+                    year: requestedYear,
+                    month: requestedMonth,
+                    reason: "shiftTable が見つかりませんでした",
+                    diagnostics: ShiftWebPageInspector.diagnostics(for: html)
+                )
             }
             throw ShiftWebError.parseFailed("shiftTable が見つかりませんでした")
         }

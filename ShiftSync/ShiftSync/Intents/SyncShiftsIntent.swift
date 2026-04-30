@@ -24,7 +24,7 @@ struct SyncShiftsIntent: AppIntent {
         
         do {
             // 同期実行
-            let result = try await BackgroundTaskManager.shared.performSync(source: .automation)
+            let result = try await BackgroundTaskManager.shared.performSync(source: .shortcut)
             
             // 変更があれば通知を送信
             if result.hasNotifiableChanges {

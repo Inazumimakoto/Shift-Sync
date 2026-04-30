@@ -51,7 +51,7 @@ struct ShiftSyncApp: App {
     
     private func performSyncFromURL() async {
         do {
-            let result = try await BackgroundTaskManager.shared.performSync(source: .automation)
+            let result = try await BackgroundTaskManager.shared.performSync(source: .urlScheme)
             print("URL Scheme同期完了: 追加=\(result.added), 更新=\(result.updated), 削除=\(result.deleted)")
             
             // 変更があれば通知を送信

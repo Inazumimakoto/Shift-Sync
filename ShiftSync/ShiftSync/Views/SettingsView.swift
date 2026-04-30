@@ -358,7 +358,11 @@ struct SettingsView: View {
                                 .foregroundStyle(.secondary)
                         } else {
                             ForEach(syncHistory) { entry in
-                                SyncHistoryRow(entry: entry)
+                                NavigationLink {
+                                    SyncHistoryDetailView(entry: entry)
+                                } label: {
+                                    SyncHistoryRow(entry: entry)
+                                }
                             }
                         }
                     }
@@ -642,16 +646,18 @@ struct SettingsView: View {
 
         Task {
             do {
-                _ = try await BackgroundTaskManager.shared.performSync(source: .manual)
+                _ = try await BackgroundTaskManager.shared.performSync(source: .settings)
 
                 await MainActor.run {
                     appState.shifts = SharedStorage.loadShifts()
                     appState.lastSyncDate = SharedStorage.loadLastSyncDate()
+                    syncHistory = SyncHistoryManager.shared.getHistory()
                     isRefreshingShiftWeb = false
                 }
             } catch {
                 await MainActor.run {
                     alertError = error.localizedDescription
+                    syncHistory = SyncHistoryManager.shared.getHistory()
                     isRefreshingShiftWeb = false
                 }
             }
@@ -663,38 +669,50 @@ struct SettingsView: View {
         
         isFullSyncing = true
         fullSyncStatus = "準備中..."
+        let logger = SyncHistoryManager.shared.beginRun(source: .fullHistory)
         
         Task {
             do {
                 let credentials = try KeychainService.shared.getShiftWebCredentials()
-                try await ShiftWebClient.shared.login(id: credentials.id, password: credentials.password)
+                try await ShiftWebClient.shared.login(id: credentials.id, password: credentials.password, logger: logger)
                 
                 let (isICloudOn, calendarId) = await MainActor.run {
                     (iCloudEnabled, SharedStorage.stringSetting(forKey: SharedStorage.selectedICloudCalendarKey))
                 }
                 
                 guard isICloudOn else {
+                    let error = NSError(domain: "ShiftSync", code: 1, userInfo: [NSLocalizedDescriptionKey: "iCloud同期がオフです"])
+                    logger.addStep(phase: .calendarSync, status: .failure, message: "iCloud同期がオフです", errorMessage: error.localizedDescription)
+                    logger.finishFailure(error: error, phase: .calendarSync)
                     await MainActor.run {
                         fullSyncStatus = "iCloud同期がオフです"
                         isFullSyncing = false
+                        syncHistory = SyncHistoryManager.shared.getHistory()
                     }
                     return
                 }
                 
                 guard let calendarId = calendarId,
                       let calendar = CalendarService.shared.getCalendars().first(where: { $0.calendarIdentifier == calendarId }) else {
+                    let error = NSError(domain: "ShiftSync", code: 2, userInfo: [NSLocalizedDescriptionKey: "カレンダーが選択されていません"])
+                    logger.addStep(phase: .calendarSync, status: .failure, message: "カレンダー未選択", errorMessage: error.localizedDescription)
+                    logger.finishFailure(error: error, phase: .calendarSync)
                     await MainActor.run {
                         fullSyncStatus = "カレンダーが選択されていません"
                         isFullSyncing = false
+                        syncHistory = SyncHistoryManager.shared.getHistory()
                     }
                     return
                 }
                 
                 let months = buildFullSyncMonths()
                 guard !months.isEmpty else {
+                    logger.addStep(phase: .fullHistory, status: .info, message: "同期対象の月がありません")
+                    logger.finishSuccess(result: SyncResult())
                     await MainActor.run {
                         fullSyncStatus = "同期対象の月がありません"
                         isFullSyncing = false
+                        syncHistory = SyncHistoryManager.shared.getHistory()
                     }
                     return
                 }
@@ -705,41 +723,71 @@ struct SettingsView: View {
                 var totalAdded = 0
                 var totalUpdated = 0
                 var totalDeleted = 0
+                var totalResult = SyncResult()
                 
                 for (index, month) in months.enumerated() {
                     await MainActor.run {
                         fullSyncStatus = "\(month.year)年\(month.month)月 取得中... (\(index + 1)/\(months.count))"
                     }
                     
-                    let shifts = try await ShiftWebClient.shared.fetchShiftsForMonths([(year: month.year, month: month.month)])
+                    let shifts = try await ShiftWebClient.shared.fetchShiftsForMonths(
+                        [(year: month.year, month: month.month)],
+                        logger: logger
+                    )
                     totalFetched += shifts.count
                     let range = monthRange(year: month.year, month: month.month)
                     mergedShifts = replaceShifts(existing: mergedShifts, incoming: shifts, range: range)
                     
-                    let result = try CalendarService.shared.syncShifts(
-                        shifts,
-                        to: calendar,
-                        searchStart: range.start,
-                        searchEnd: range.end
-                    )
+                    let syncMonth = SyncMonth(year: month.year, month: month.month)
+                    logger.addStep(phase: .calendarSync, status: .started, message: "\(syncMonth.label) カレンダー同期開始", month: syncMonth)
+                    let result: SyncResult
+                    do {
+                        result = try CalendarService.shared.syncShifts(
+                            shifts,
+                            to: calendar,
+                            searchStart: range.start,
+                            searchEnd: range.end
+                        )
+                        logger.addStep(phase: .calendarSync, status: .success, message: "\(syncMonth.label) カレンダー同期成功 / \(result.summary)", month: syncMonth)
+                    } catch {
+                        logger.addStep(
+                            phase: .calendarSync,
+                            status: .failure,
+                            message: "\(syncMonth.label) カレンダー同期失敗",
+                            month: syncMonth,
+                            errorMessage: error.localizedDescription
+                        )
+                        throw error
+                    }
                     totalAdded += result.added
                     totalUpdated += result.updated
                     totalDeleted += result.deleted
+                    totalResult.added += result.added
+                    totalResult.updated += result.updated
+                    totalResult.deleted += result.deleted
                     
                     try await Task.sleep(nanoseconds: 300_000_000)
                 }
                 
                 let sortedShifts = mergedShifts.sorted { $0.start < $1.start }
                 
+                logger.addStep(phase: .saveStorage, status: .started, message: "全履歴同期の保存開始")
                 await MainActor.run {
                     appState.saveShifts(sortedShifts)
+                }
+                logger.addStep(phase: .saveStorage, status: .success, message: "全履歴同期の保存成功 / \(sortedShifts.count)件")
+                logger.finishSuccess(result: totalResult)
+                await MainActor.run {
                     fullSyncStatus = "完了: \(months.count)ヶ月 / \(totalFetched)件 (追加\(totalAdded)・更新\(totalUpdated)・削除\(totalDeleted))"
                     isFullSyncing = false
+                    syncHistory = SyncHistoryManager.shared.getHistory()
                 }
             } catch {
+                logger.finishFailure(error: error)
                 await MainActor.run {
                     fullSyncStatus = "エラー: \(error.localizedDescription)"
                     isFullSyncing = false
+                    syncHistory = SyncHistoryManager.shared.getHistory()
                 }
             }
         }
@@ -921,6 +969,11 @@ struct SyncHistoryRow: View {
                 Text(entry.source.rawValue)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                if let failureSummary = entry.failureSummary {
+                    Text(failureSummary)
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                }
             }
             
             Spacer()
@@ -939,6 +992,260 @@ struct SyncHistoryRow: View {
         }
         .padding(.vertical, 2)
     }
+}
+
+struct SyncHistoryDetailView: View {
+    let entry: SyncLogEntry
+
+    var body: some View {
+        List {
+            Section("概要") {
+                detailRow("結果", entry.success ? "成功" : "失敗", valueColor: entry.success ? .green : .red)
+                detailRow("起動元", entry.source.rawValue)
+                detailRow("同期ID", entry.displayRunID)
+                detailRow("開始", formatFullDate(entry.startedAt ?? entry.date))
+                if let endedAt = entry.endedAt {
+                    detailRow("終了", formatFullDate(endedAt))
+                }
+                if let durationText = entry.durationText {
+                    detailRow("所要時間", durationText)
+                }
+                if let failurePhase = entry.failurePhase {
+                    detailRow("失敗フェーズ", failurePhase.label, valueColor: .red)
+                }
+                if let failureMonth = entry.failureMonth {
+                    detailRow("対象月", failureMonth.label, valueColor: .red)
+                }
+                if !entry.concurrentRunIDs.isEmpty {
+                    detailRow("同時実行", entry.concurrentRunIDs.joined(separator: ", "), valueColor: .orange)
+                }
+                if let errorMessage = entry.errorMessage, !errorMessage.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("エラー")
+                            .foregroundStyle(.secondary)
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                    .padding(.vertical, 2)
+                }
+            }
+
+            if !entry.monthLogs.isEmpty {
+                Section("月別ログ") {
+                    ForEach(entry.monthLogs) { log in
+                        SyncMonthLogRow(log: log)
+                    }
+                }
+            }
+
+            Section("タイムライン") {
+                if entry.steps.isEmpty {
+                    Text("詳細ログはありません")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(entry.steps) { step in
+                        SyncLogStepRow(step: step)
+                    }
+                }
+            }
+        }
+        .navigationTitle("同期ログ")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    @ViewBuilder
+    private func detailRow(_ title: String, _ value: String, valueColor: Color = .primary) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 16)
+            Text(value)
+                .foregroundStyle(valueColor)
+                .multilineTextAlignment(.trailing)
+        }
+    }
+}
+
+struct SyncMonthLogRow: View {
+    let log: SyncMonthLog
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(log.month.label)
+                    .font(.subheadline)
+                Spacer()
+                Text(statusText)
+                    .font(.caption)
+                    .foregroundStyle(statusColor)
+            }
+
+            let details = detailParts
+            if !details.isEmpty {
+                Text(details.joined(separator: " / "))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let headerText = log.headerText, !headerText.isEmpty {
+                Text("見出し: \(headerText)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let finalURL = log.finalURL, !finalURL.isEmpty {
+                Text("URL: \(finalURL)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+
+            if let errorMessage = log.errorMessage, !errorMessage.isEmpty {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var statusText: String {
+        if log.fetchSucceeded == false || log.parseSucceeded == false {
+            return "失敗"
+        }
+        if log.parseSucceeded == true {
+            return "成功"
+        }
+        if log.fetchSucceeded == true {
+            return "取得済み"
+        }
+        return "不明"
+    }
+
+    private var statusColor: Color {
+        switch statusText {
+        case "成功": return .green
+        case "失敗": return .red
+        default: return .secondary
+        }
+    }
+
+    private var detailParts: [String] {
+        var parts: [String] = []
+        if let httpStatus = log.httpStatus {
+            parts.append("HTTP \(httpStatus)")
+        }
+        if let pageKind = log.pageKind {
+            parts.append(pageKind.label)
+        }
+        if let hasShiftTable = log.hasShiftTable {
+            parts.append(hasShiftTable ? "shiftTableあり" : "shiftTableなし")
+        }
+        if let htmlSize = log.htmlSize {
+            parts.append("\(htmlSize) bytes")
+        }
+        if let shiftCount = log.shiftCount {
+            parts.append("\(shiftCount)件")
+        }
+        return parts
+    }
+}
+
+struct SyncLogStepRow: View {
+    let step: SyncLogStep
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: step.status.icon)
+                .foregroundStyle(statusColor)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(formatTime(step.date))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(step.phase.label)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Text(step.message)
+                    .font(.subheadline)
+
+                let details = detailParts
+                if !details.isEmpty {
+                    Text(details.joined(separator: " / "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if let finalURL = step.finalURL, !finalURL.isEmpty {
+                    Text("URL: \(finalURL)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                if let errorMessage = step.errorMessage, !errorMessage.isEmpty {
+                    Text(errorMessage)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var statusColor: Color {
+        switch step.status {
+        case .info: return .blue
+        case .started: return .secondary
+        case .success: return .green
+        case .failure: return .red
+        }
+    }
+
+    private var detailParts: [String] {
+        var parts: [String] = []
+        if let month = step.month {
+            parts.append(month.label)
+        }
+        if let httpStatus = step.httpStatus {
+            parts.append("HTTP \(httpStatus)")
+        }
+        if let pageKind = step.pageKind {
+            parts.append(pageKind.label)
+        }
+        if let hasShiftTable = step.hasShiftTable {
+            parts.append(hasShiftTable ? "shiftTableあり" : "shiftTableなし")
+        }
+        if let htmlSize = step.htmlSize {
+            parts.append("\(htmlSize) bytes")
+        }
+        if let shiftCount = step.shiftCount {
+            parts.append("\(shiftCount)件")
+        }
+        if let headerText = step.headerText, !headerText.isEmpty {
+            parts.append("見出し: \(headerText)")
+        }
+        return parts
+    }
+}
+
+private func formatFullDate(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy/M/d(E) HH:mm:ss"
+    formatter.locale = Locale(identifier: "ja_JP")
+    return formatter.string(from: date)
+}
+
+private func formatTime(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "HH:mm:ss"
+    formatter.locale = Locale(identifier: "ja_JP")
+    return formatter.string(from: date)
 }
 
 struct ShareSheet: UIViewControllerRepresentable {

@@ -404,7 +404,7 @@ struct SetupView: View {
         isSyncing = true
         Task {
             do {
-                _ = try await BackgroundTaskManager.shared.performSync(source: .manual)
+                _ = try await BackgroundTaskManager.shared.performSync(source: .initialSetup)
             } catch {
                 print("初回同期エラー: \(error)")
             }

@@ -49,6 +49,70 @@
 		1A1B1C1D2F60000100AA0006 /* SyncLogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EACACB22F11001005E1825 /* SyncLogEntry.swift */; };
 		1A1B1C1D2F60000100AA0007 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 0EACABCC2F0E8DCC005E1825 /* GoogleSignIn */; };
 		1A1B1C1D2F60000100AA0008 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 0EACABCE2F0E8DCC005E1825 /* GoogleSignInSwift */; };
+		090BAF9A4E52902AEAB83B42 /* RetirementAlarmPolicy.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = BD13F30CE20432BEA98EA6BA /* RetirementAlarmPolicy.swift */;
+		};
+		8B8780B778259348309E1337 /* RetirementAlarmStore.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 5A50CEA3E573C8AB5A99E7CE /* RetirementAlarmStore.swift */;
+		};
+		A76158D47ADAE7B86A151250 /* AlarmCoordinator.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 928F080C4137EDA3AF059534 /* AlarmCoordinator.swift */;
+		};
+		944E5F774790A3564FA9DE2E /* RetirementAlarmIntents.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = BF0A56BA721B07E6D7612235 /* RetirementAlarmIntents.swift */;
+		};
+		1F5E6405761BF48A907010CD /* AppRouter.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 574F31A59127C4639F9A4D63 /* AppRouter.swift */;
+		};
+		8E3C21DE3B47BB30F4BE11D3 /* AnnouncementService.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 3998CE55D4C52DD60ACA8993 /* AnnouncementService.swift */;
+		};
+		1DB83076D4C2BB99A1834B00 /* ShiftSyncAppDelegate.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = EFC651D21348028183D7AF91 /* ShiftSyncAppDelegate.swift */;
+		};
+		1DFE46C60E78F73DF6CF543B /* AlarmSettingsSection.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 41426AF1177F446FFF3392F4 /* AlarmSettingsSection.swift */;
+		};
+		C7FA1AA4C5F8759295C0D97C /* FeatureIntroductionView.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = B6DB72A61D00E0558D875C63 /* FeatureIntroductionView.swift */;
+		};
+		06648831F3DF87519DCE26AA /* WidgetSyncIntent.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 1A1B1C1D2F50000100AA0017 /* WidgetSyncIntent.swift */;
+		};
+		5207BFA72DF75F1FBF39D1B0 /* FirebaseCore in Frameworks */ = {
+			isa = PBXBuildFile;
+			productRef = 6AAAA812D0CB1C9B9F05591A /* FirebaseCore */;
+		};
+		63AB01991987652162614DB9 /* FirebaseMessaging in Frameworks */ = {
+			isa = PBXBuildFile;
+			productRef = 4A4D014923CEE941524D85C4 /* FirebaseMessaging */;
+		};
+		5174793DD85D8B6D3295E8DA /* RetirementAlarmClient.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = BB0E00307D08528049C4F716 /* RetirementAlarmClient.swift */;
+		};
+		11AA8424A81BEFDCF6168B95 /* GoogleService-Info.plist in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = B087641EE397432D0A73F41C;
+		};
+		4CEE7D6C78623038B8C0F594 /* RetirementAlarmPolicyTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 6EA2C001416E26064EB3FE03 /* RetirementAlarmPolicyTests.swift */;
+		};
+		A55E9DFF2159C427AD9F193A /* AlarmCoordinatorTests.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = E105BC0C5A1E0285ABB74B57 /* AlarmCoordinatorTests.swift */;
+		};
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,6 +122,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 1A1B1C1D2F40000100AA0040;
 			remoteInfo = ShiftSyncWidgetsExtension;
+		};
+		A31C091E4C96C37BF94D8AD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0EACAB922F0E8CC1005E1825;
+			proxyType = 1;
+			remoteGlobalIDString = 0EACAB992F0E8CC1005E1825;
+			remoteInfo = ShiftSync;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -106,6 +177,91 @@
 		1A1B1C1D2F40000100AA0015 /* ShiftSyncWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftSyncWidgetBundle.swift; sourceTree = "<group>"; };
 		1A1B1C1D2F40000100AA0016 /* ShiftSyncSmallWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftSyncSmallWidget.swift; sourceTree = "<group>"; };
 		1A1B1C1D2F50000100AA0017 /* WidgetSyncIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSyncIntent.swift; sourceTree = "<group>"; };
+		BD13F30CE20432BEA98EA6BA /* RetirementAlarmPolicy.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = RetirementAlarmPolicy.swift;
+			sourceTree = "<group>";
+		};
+		5A50CEA3E573C8AB5A99E7CE /* RetirementAlarmStore.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = RetirementAlarmStore.swift;
+			sourceTree = "<group>";
+		};
+		928F080C4137EDA3AF059534 /* AlarmCoordinator.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = AlarmCoordinator.swift;
+			sourceTree = "<group>";
+		};
+		BF0A56BA721B07E6D7612235 /* RetirementAlarmIntents.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = RetirementAlarmIntents.swift;
+			sourceTree = "<group>";
+		};
+		574F31A59127C4639F9A4D63 /* AppRouter.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = AppRouter.swift;
+			sourceTree = "<group>";
+		};
+		3998CE55D4C52DD60ACA8993 /* AnnouncementService.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = AnnouncementService.swift;
+			sourceTree = "<group>";
+		};
+		EFC651D21348028183D7AF91 /* ShiftSyncAppDelegate.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = ShiftSyncAppDelegate.swift;
+			sourceTree = "<group>";
+		};
+		41426AF1177F446FFF3392F4 /* AlarmSettingsSection.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = AlarmSettingsSection.swift;
+			sourceTree = "<group>";
+		};
+		B6DB72A61D00E0558D875C63 /* FeatureIntroductionView.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = FeatureIntroductionView.swift;
+			sourceTree = "<group>";
+		};
+		BB0E00307D08528049C4F716 /* RetirementAlarmClient.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = RetirementAlarmClient.swift;
+			sourceTree = "<group>";
+		};
+		B087641EE397432D0A73F41C /* GoogleService-Info.plist */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = text.plist.xml;
+			path = "GoogleService-Info.plist";
+			sourceTree = "<group>";
+		};
+		3EC647D6B054CE641DA2FC1D /* ShiftSyncTests.xctest */ = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			includeInIndex = 0;
+			path = ShiftSyncTests.xctest;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		6EA2C001416E26064EB3FE03 /* RetirementAlarmPolicyTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = RetirementAlarmPolicyTests.swift;
+			sourceTree = "<group>";
+		};
+		E105BC0C5A1E0285ABB74B57 /* AlarmCoordinatorTests.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = AlarmCoordinatorTests.swift;
+			sourceTree = "<group>";
+		};
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -113,6 +269,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				63AB01991987652162614DB9 /* FirebaseMessaging in Frameworks */,
+				5207BFA72DF75F1FBF39D1B0 /* FirebaseCore in Frameworks */,
 				0EACABCF2F0E8DCC005E1825 /* GoogleSignInSwift in Frameworks */,
 				0EACABCA2F0E8DAE005E1825 /* SwiftSoup in Frameworks */,
 				0EACABCD2F0E8DCC005E1825 /* GoogleSignIn in Frameworks */,
@@ -135,6 +293,9 @@
 		0EACAB912F0E8CC1005E1825 = {
 			isa = PBXGroup;
 			children = (
+				899D9037E3D4129D2DCB1382 /* ShiftSyncTests */,
+				B087641EE397432D0A73F41C /* GoogleService-Info.plist */,
+				EFC651D21348028183D7AF91 /* ShiftSyncAppDelegate.swift */,
 				0EACAB9B2F0E8CC1005E1825 /* Products */,
 				0EACABAA2F0E8D6C005E1825 /* Background */,
 				0EACABAB2F0E8D6C005E1825 /* Info.plist */,
@@ -154,6 +315,7 @@
 		0EACAB9B2F0E8CC1005E1825 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				3EC647D6B054CE641DA2FC1D /* ShiftSyncTests.xctest */,
 				0EACAB9A2F0E8CC1005E1825 /* ShiftSync.app */,
 				1A1B1C1D2F40000100AA0010 /* ShiftSyncWidgetsExtension.appex */,
 			);
@@ -172,6 +334,7 @@
 		0EACABAD2F0E8D6C005E1825 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				BD13F30CE20432BEA98EA6BA /* RetirementAlarmPolicy.swift */,
 				0EACABAC2F0E8D6C005E1825 /* Shift.swift */,
 				0EACACB22F11001005E1825 /* SyncLogEntry.swift */,
 			);
@@ -181,6 +344,11 @@
 		0EACABB32F0E8D6C005E1825 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				BB0E00307D08528049C4F716 /* RetirementAlarmClient.swift */,
+				3998CE55D4C52DD60ACA8993 /* AnnouncementService.swift */,
+				574F31A59127C4639F9A4D63 /* AppRouter.swift */,
+				928F080C4137EDA3AF059534 /* AlarmCoordinator.swift */,
+				5A50CEA3E573C8AB5A99E7CE /* RetirementAlarmStore.swift */,
 				0E4967D32F32219800BAF412 /* UserAgentFetcher.swift */,
 				0EACABAE2F0E8D6C005E1825 /* ShiftWebClient.swift */,
 				0EACABAF2F0E8D6C005E1825 /* CalendarService.swift */,
@@ -197,6 +365,8 @@
 		0EACABB92F0E8D6C005E1825 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				B6DB72A61D00E0558D875C63 /* FeatureIntroductionView.swift */,
+				41426AF1177F446FFF3392F4 /* AlarmSettingsSection.swift */,
 				0EACABB52F0E8D6C005E1825 /* ShiftWebLoginView.swift */,
 				0EACABB62F0E8D6C005E1825 /* ContentView.swift */,
 				0EACABB72F0E8D6C005E1825 /* SettingsView.swift */,
@@ -209,6 +379,7 @@
 		0EACABD42F0F0000005E1825 /* Intents */ = {
 			isa = PBXGroup;
 			children = (
+				BF0A56BA721B07E6D7612235 /* RetirementAlarmIntents.swift */,
 				0EACABD32F0F0000005E1825 /* SyncShiftsIntent.swift */,
 			);
 			path = Intents;
@@ -222,6 +393,15 @@
 				1A1B1C1D2F50000100AA0017 /* WidgetSyncIntent.swift */,
 			);
 			path = Widgets;
+			sourceTree = "<group>";
+		};
+		899D9037E3D4129D2DCB1382 /* ShiftSyncTests */ = {
+			isa = PBXGroup;
+			children = (
+				E105BC0C5A1E0285ABB74B57 /* AlarmCoordinatorTests.swift */,
+				6EA2C001416E26064EB3FE03 /* RetirementAlarmPolicyTests.swift */,
+			);
+			path = ../ShiftSyncTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -243,6 +423,8 @@
 			);
 			name = ShiftSync;
 			packageProductDependencies = (
+				4A4D014923CEE941524D85C4 /* FirebaseMessaging */,
+				6AAAA812D0CB1C9B9F05591A /* FirebaseCore */,
 				0EACABC92F0E8DAE005E1825 /* SwiftSoup */,
 				0EACABCC2F0E8DCC005E1825 /* GoogleSignIn */,
 				0EACABCE2F0E8DCC005E1825 /* GoogleSignInSwift */,
@@ -273,6 +455,17 @@
 			productReference = 1A1B1C1D2F40000100AA0010 /* ShiftSyncWidgetsExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		0F4FA953BADE96BDECEFD1BF /* ShiftSyncTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B034D6395394CD0552772756;
+			buildPhases = (E666A422D63A5F9BB6BB6BE9);
+			buildRules = ();
+			dependencies = (616D0722A0E3F17607CE915C);
+			name = ShiftSyncTests;
+			productName = ShiftSyncTests;
+			productReference = 3EC647D6B054CE641DA2FC1D;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -301,6 +494,7 @@
 			mainGroup = 0EACAB912F0E8CC1005E1825;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				0CC14AE2AFC3B46A310C31DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				0EACABC82F0E8DAE005E1825 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
 				0EACABCB2F0E8DCC005E1825 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
@@ -309,6 +503,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				0F4FA953BADE96BDECEFD1BF /* ShiftSyncTests */,
 				0EACAB992F0E8CC1005E1825 /* ShiftSync */,
 				1A1B1C1D2F40000100AA0040 /* ShiftSyncWidgetsExtension */,
 			);
@@ -320,6 +515,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				11AA8424A81BEFDCF6168B95 /* GoogleService-Info.plist in Resources */,
 				0EACACB02F0FE440005E1825 /* Media.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -338,6 +534,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5174793DD85D8B6D3295E8DA /* RetirementAlarmClient.swift in Sources */,
+				06648831F3DF87519DCE26AA /* WidgetSyncIntent.swift in Sources */,
+				C7FA1AA4C5F8759295C0D97C /* FeatureIntroductionView.swift in Sources */,
+				1DFE46C60E78F73DF6CF543B /* AlarmSettingsSection.swift in Sources */,
+				1DB83076D4C2BB99A1834B00 /* ShiftSyncAppDelegate.swift in Sources */,
+				8E3C21DE3B47BB30F4BE11D3 /* AnnouncementService.swift in Sources */,
+				1F5E6405761BF48A907010CD /* AppRouter.swift in Sources */,
+				944E5F774790A3564FA9DE2E /* RetirementAlarmIntents.swift in Sources */,
+				A76158D47ADAE7B86A151250 /* AlarmCoordinator.swift in Sources */,
+				8B8780B778259348309E1337 /* RetirementAlarmStore.swift in Sources */,
+				090BAF9A4E52902AEAB83B42 /* RetirementAlarmPolicy.swift in Sources */,
 				0EACABBA2F0E8D6C005E1825 /* ICSExporter.swift in Sources */,
 				0EACABBB2F0E8D6C005E1825 /* ShiftParser.swift in Sources */,
 				0EACABBC2F0E8D6C005E1825 /* SetupView.swift in Sources */,
@@ -382,6 +589,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E666A422D63A5F9BB6BB6BE9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A55E9DFF2159C427AD9F193A /* AlarmCoordinatorTests.swift in Sources */,
+				4CEE7D6C78623038B8C0F594 /* RetirementAlarmPolicyTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -389,6 +605,11 @@
 			isa = PBXTargetDependency;
 			target = 1A1B1C1D2F40000100AA0040 /* ShiftSyncWidgetsExtension */;
 			targetProxy = 1A1B1C1D2F40000100AA0050 /* PBXContainerItemProxy */;
+		};
+		616D0722A0E3F17607CE915C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0EACAB992F0E8CC1005E1825;
+			targetProxy = A31C091E4C96C37BF94D8AD0;
 		};
 /* End PBXTargetDependency section */
 
@@ -521,7 +742,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ShiftSync.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = V7XG8HDQL4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -535,7 +756,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.3;
+				MARKETING_VERSION = 1.2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.inazumimakoto.ShiftSync;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -555,7 +776,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ShiftSync.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = V7XG8HDQL4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -569,7 +790,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.3;
+				MARKETING_VERSION = 1.2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.inazumimakoto.ShiftSync;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -585,11 +806,12 @@
 		1A1B1C1D2F40000100AA0060 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) APP_EXTENSION";
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = ShiftSyncWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = V7XG8HDQL4;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "ShiftSyncWidgetExtension-Info.plist";
@@ -599,7 +821,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.3;
+				MARKETING_VERSION = 1.2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.inazumimakoto.ShiftSync.ShiftSyncWidgetsExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -613,11 +835,12 @@
 		1A1B1C1D2F40000100AA0061 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) APP_EXTENSION";
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
 				CODE_SIGN_ENTITLEMENTS = ShiftSyncWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 12;
+				CURRENT_PROJECT_VERSION = 13;
 				DEVELOPMENT_TEAM = V7XG8HDQL4;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "ShiftSyncWidgetExtension-Info.plist";
@@ -627,7 +850,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.3;
+				MARKETING_VERSION = 1.2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = com.inazumimakoto.ShiftSync.ShiftSyncWidgetsExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -635,6 +858,42 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		81FE1E6164D605AC972E1C97 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = V7XG8HDQL4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks");
+				PRODUCT_BUNDLE_IDENTIFIER = com.inazumimakoto.ShiftSyncTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ShiftSync.app/ShiftSync";
+			};
+			name = Debug;
+		};
+		48939D28BCAF0D16B445B354 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = V7XG8HDQL4;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks");
+				PRODUCT_BUNDLE_IDENTIFIER = com.inazumimakoto.ShiftSyncTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ShiftSync.app/ShiftSync";
 			};
 			name = Release;
 		};
@@ -668,6 +927,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		B034D6395394CD0552772756 /* Build configuration list for ShiftSyncTests */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				81FE1E6164D605AC972E1C97,
+				48939D28BCAF0D16B445B354,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -687,6 +955,11 @@
 				minimumVersion = 9.0.0;
 			};
 		};
+		0CC14AE2AFC3B46A310C31DB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			requirement = { kind = upToNextMajorVersion; minimumVersion = 12.19.2; };
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -704,6 +977,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0EACABCB2F0E8DCC005E1825 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignInSwift;
+		};
+		6AAAA812D0CB1C9B9F05591A /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0CC14AE2AFC3B46A310C31DB;
+			productName = FirebaseCore;
+		};
+		4A4D014923CEE941524D85C4 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0CC14AE2AFC3B46A310C31DB;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

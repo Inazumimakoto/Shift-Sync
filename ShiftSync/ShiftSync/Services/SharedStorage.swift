@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 enum SharedStorage {
     // App Group ID (Signing & Capabilitiesでも同じ値を設定)
@@ -47,6 +50,17 @@ enum SharedStorage {
     static func saveLastSyncDate(_ date: Date) {
         UserDefaults.standard.set(date, forKey: lastSyncDateKey)
         sharedDefaults?.set(date, forKey: lastSyncDateKey)
+    }
+
+    /// アカウントを切り替える際、前の利用者のシフトを再利用しない。
+    static func clearShiftCache() {
+        for defaults in [UserDefaults.standard, sharedDefaults].compactMap({ $0 }) {
+            defaults.removeObject(forKey: savedShiftsKey)
+            defaults.removeObject(forKey: lastSyncDateKey)
+        }
+#if canImport(WidgetKit)
+        WidgetCenter.shared.reloadAllTimelines()
+#endif
     }
 
     static func boolSetting(forKey key: String, default defaultValue: Bool = false) -> Bool {

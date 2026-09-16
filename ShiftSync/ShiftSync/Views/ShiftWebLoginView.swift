@@ -10,6 +10,7 @@ struct ShiftWebLoginView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var extractedCredentials: (id: String, password: String)?
+    @State private var isSavingCredentials = false
 
     init(promptMessage: String? = nil, onComplete: @escaping (Bool) -> Void) {
         self.promptMessage = promptMessage
@@ -75,17 +76,30 @@ struct ShiftWebLoginView: View {
     }
     
     private func saveCredentialsAndDismiss(id: String, password: String) {
+        guard !isSavingCredentials else { return }
         guard !id.isEmpty, !password.isEmpty else {
             errorMessage = "IDまたはパスワードが取得できませんでした"
             return
         }
         
-        do {
-            try KeychainService.shared.saveShiftWebCredentials(id: id, password: password)
-            dismiss()
-            onComplete(true)
-        } catch {
-            errorMessage = "認証情報の保存に失敗しました: \(error.localizedDescription)"
+        isSavingCredentials = true
+        Task { @MainActor in
+            let oldID = try? KeychainService.shared.getShiftWebCredentials().id
+            do {
+                if oldID != id {
+                    // Prevent an old account's in-flight sync from reactivating
+                    // alarms while suspension awaits the current operation.
+                    try KeychainService.shared.deleteShiftWebCredentials()
+                    await AlarmCoordinator.shared.suspendForLogout()
+                    SharedStorage.clearShiftCache()
+                }
+                try KeychainService.shared.saveShiftWebCredentials(id: id, password: password)
+                dismiss()
+                onComplete(true)
+            } catch {
+                isSavingCredentials = false
+                errorMessage = "認証情報の保存に失敗しました: \(error.localizedDescription)"
+            }
         }
     }
 }

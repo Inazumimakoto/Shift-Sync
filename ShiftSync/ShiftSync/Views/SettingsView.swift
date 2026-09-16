@@ -5,6 +5,9 @@ struct SettingsView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) var dismiss
     @AppStorage(LaunchDestination.storageKey) private var launchDestinationRawValue = LaunchDestination.shifts.rawValue
+#if DEBUG
+    @AppStorage(FeatureIntroduction.seenKey) private var hasSeenFeatureIntroduction = false
+#endif
     
     let initialScrollTarget: SettingsScrollTarget?
     
@@ -20,6 +23,7 @@ struct SettingsView: View {
     @State private var newCalendarName = ""
     @State private var alertError: String?
     @State private var isRefreshingShiftWeb = false
+    @State private var isLoggingOut = false
     
     // Google Calendar
     @State private var googleCalendars: [GoogleCalendar] = []
@@ -52,6 +56,8 @@ struct SettingsView: View {
         NavigationStack {
             ScrollViewReader { proxy in
                 List {
+                AlarmSettingsSection()
+
                 // 同期先セクション
                 Section {
                     // iCloud
@@ -244,6 +250,7 @@ struct SettingsView: View {
                         } label: {
                             Label("ログアウト", systemImage: "rectangle.portrait.and.arrow.right")
                         }
+                        .disabled(isLoggingOut || isRefreshingShiftWeb || isFullSyncing)
                     } else {
                         Button {
                             showingShiftWebLogin = true
@@ -386,6 +393,25 @@ struct SettingsView: View {
                     #if DEBUG
                     // デバッグ用セクション（リリースビルドでは非表示）
                     Section {
+                        Toggle("次の起動で新機能紹介を表示", isOn: Binding(
+                            get: { !hasSeenFeatureIntroduction },
+                            set: { hasSeenFeatureIntroduction = !$0 }
+                        ))
+                        .accessibilityIdentifier("showFeatureIntroductionOnNextLaunch")
+
+                        if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
+                            Link(destination: settingsURL) {
+                                Label("アラームの許可設定を開く", systemImage: "gearshape")
+                            }
+                            .accessibilityIdentifier("debugOpenAlarmPermissionSettings")
+                        }
+
+                        Button {
+                            Task { await AlarmCoordinator.shared.scheduleTestAlarm() }
+                        } label: {
+                            Label("テストアラームを鳴らす", systemImage: "alarm")
+                        }
+
                         Button(role: .destructive) {
                             resetSavedShifts()
                         } label: {
@@ -412,7 +438,7 @@ struct SettingsView: View {
                     } header: {
                         Text("デバッグ")
                     } footer: {
-                        Text("保存データリセット→新規検出テスト\n打刻案内再表示→初回ガイド表示テスト\n時間変更→更新検出テスト\nダミー追加→削除検出テスト（次回同期で消える）")
+                        Text("新機能紹介のトグルをオンにして起動し直すと、更新後の案内を確認できます。\nアラームの許可は「アラームの許可設定を開く」から、iPhoneの設定でオフにしてください。アプリから権限を取り消したり、初回の未確認状態に戻したりすることはできません。\n保存データリセット→新規検出テスト\n打刻案内再表示→初回ガイド表示テスト\n時間変更→更新検出テスト\nダミー追加→削除検出テスト（次回同期で消える）")
                     }
                     #endif
                 }
@@ -428,6 +454,10 @@ struct SettingsView: View {
                 .onAppear {
                     loadSettings()
                     scrollToInitialTargetIfNeeded(using: proxy)
+                }
+                .task {
+                    await AnnouncementService.shared.refresh()
+                    await AlarmCoordinator.shared.reconcile()
                 }
                 .sheet(isPresented: $showingShiftWebLogin) {
                     ShiftWebLoginView { success in
@@ -632,16 +662,28 @@ struct SettingsView: View {
     }
     
     private func logout() {
-        do {
-            try KeychainService.shared.deleteShiftWebCredentials()
-            appState.isLoggedIn = false
-        } catch {
-            print("ログアウトエラー: \(error)")
+        guard !isLoggingOut else { return }
+        isLoggingOut = true
+        Task {
+            do {
+                // Invalidate in-flight syncs before waiting for AlarmKit cleanup.
+                try KeychainService.shared.deleteShiftWebCredentials()
+                await AlarmCoordinator.shared.suspendForLogout()
+                SharedStorage.clearShiftCache()
+                appState.isLoggedIn = false
+                appState.shifts = []
+                appState.lastSyncDate = nil
+            } catch {
+                alertError = "ログアウトに失敗しました: \(error.localizedDescription)"
+            }
+            isLoggingOut = false
         }
     }
 
     private func handleShiftWebLoginSuccess() {
         appState.isLoggedIn = true
+        appState.shifts = SharedStorage.loadShifts()
+        appState.lastSyncDate = SharedStorage.loadLastSyncDate()
         isRefreshingShiftWeb = true
 
         Task {

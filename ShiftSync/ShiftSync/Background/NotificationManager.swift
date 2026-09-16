@@ -10,6 +10,9 @@ class NotificationManager {
     /// 通知権限をリクエスト
     func requestPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+#if !APP_EXTENSION
+            Task { @MainActor in await AnnouncementService.shared.refresh() }
+#endif
             if granted {
                 print("通知が許可されました")
             } else if let error = error {

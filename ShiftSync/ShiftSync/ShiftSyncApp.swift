@@ -7,6 +7,8 @@ import WidgetKit
 
 @main
 struct ShiftSyncApp: App {
+    @UIApplicationDelegateAdaptor(ShiftSyncAppDelegate.self) private var appDelegate
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var appState = AppState()
     
     init() {
@@ -29,6 +31,13 @@ struct ShiftSyncApp: App {
                 .onOpenURL { url in
                     handleURL(url)
                 }
+                .onChange(of: scenePhase, initial: true) { _, phase in
+                    guard phase == .active else { return }
+                    Task {
+                        await AlarmCoordinator.shared.reconcile()
+                        await AnnouncementService.shared.refresh()
+                    }
+                }
         }
     }
     
@@ -41,6 +50,14 @@ struct ShiftSyncApp: App {
         
         // ShiftSync URL Scheme (shiftsync://sync)
         if url.scheme == "shiftsync" {
+            if url.host == "timecard" {
+                AppRouter.shared.open(.timecard)
+                return
+            }
+            if url.host == "alarm-guide" {
+                AppRouter.shared.open(.featureIntroduction)
+                return
+            }
             if url.host == "sync" || url.path == "/sync" || url.host == nil {
                 Task {
                     await performSyncFromURL()

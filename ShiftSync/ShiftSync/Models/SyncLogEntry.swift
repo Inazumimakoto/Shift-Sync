@@ -38,6 +38,7 @@ enum SyncPhase: String, Codable, Equatable {
     case parseMonth
     case calendarSync
     case saveStorage
+    case alarmScheduling
     case fullHistory
     case finish
     case unknown
@@ -50,6 +51,7 @@ enum SyncPhase: String, Codable, Equatable {
         case .parseMonth: return "解析"
         case .calendarSync: return "カレンダー同期"
         case .saveStorage: return "保存"
+        case .alarmScheduling: return "退勤アラーム"
         case .fullHistory: return "全履歴同期"
         case .finish: return "終了"
         case .unknown: return "不明"

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme LastUpgradeVersion="2610" version="1.3">
+ <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES"><BuildActionEntries>
+  <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="0EACAB992F0E8CC1005E1825" BuildableName="ShiftSync.app" BlueprintName="ShiftSync" ReferencedContainer="container:ShiftSync.xcodeproj"/></BuildActionEntry>
+ </BuildActionEntries></BuildAction>
+ <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES"><Testables><TestableReference skipped="NO"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="0F4FA953BADE96BDECEFD1BF" BuildableName="ShiftSyncTests.xctest" BlueprintName="ShiftSyncTests" ReferencedContainer="container:ShiftSync.xcodeproj"/></TestableReference></Testables></TestAction>
+ <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.IDEFoundation.Launcher.LLDB" launchStyle="0" useCustomWorkingDirectory="NO" ignoresPersistentStateOnLaunch="NO" debugDocumentVersioning="YES" debugServiceExtension="internal" allowLocationSimulation="YES"><BuildableProductRunnable runnableDebuggingMode="0"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="0EACAB992F0E8CC1005E1825" BuildableName="ShiftSync.app" BlueprintName="ShiftSync" ReferencedContainer="container:ShiftSync.xcodeproj"/></BuildableProductRunnable></LaunchAction>
+ <ProfileAction buildConfiguration="Release" shouldUseLaunchSchemeArgsEnv="YES" savedToolIdentifier="" useCustomWorkingDirectory="NO" debugDocumentVersioning="YES"><BuildableProductRunnable runnableDebuggingMode="0"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="0EACAB992F0E8CC1005E1825" BuildableName="ShiftSync.app" BlueprintName="ShiftSync" ReferencedContainer="container:ShiftSync.xcodeproj"/></BuildableProductRunnable></ProfileAction>
+ <AnalyzeAction buildConfiguration="Debug"/>
+ <ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES"/>
+</Scheme>

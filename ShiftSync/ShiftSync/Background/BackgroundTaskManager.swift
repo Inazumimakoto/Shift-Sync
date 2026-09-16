@@ -153,6 +153,10 @@ class BackgroundTaskManager {
             }
             
             // 新しいシフトを保存（取得範囲内は置き換え）
+            // ログアウト・アカウント変更前に始まった同期結果は保存しない。
+            guard (try? KeychainService.shared.getShiftWebCredentials().id) == credentials.id else {
+                throw CancellationError()
+            }
             logger.addStep(phase: .saveStorage, status: .started, message: "保存開始")
             let updatedShifts = SharedStorage.replaceShiftsInCurrentSyncRange(
                 existing: previousShifts,
@@ -164,6 +168,15 @@ class BackgroundTaskManager {
             let lastSyncDate = Date()
             SharedStorage.saveLastSyncDate(lastSyncDate)
             logger.addStep(phase: .saveStorage, status: .success, message: "保存成功 / \(updatedShifts.count)件")
+
+#if !APP_EXTENSION
+            // 取得・カレンダー同期・保存が成功した確定データだけで予約を更新する。
+            // AlarmKitの失敗はカレンダー同期の成否と分けて表示・再試行する。
+            await AlarmCoordinator.shared.reconcile(shifts: updatedShifts)
+            if let alarmStatus = await AlarmCoordinator.shared.statusMessage {
+                logger.addStep(phase: .alarmScheduling, status: .info, message: alarmStatus)
+            }
+#endif
             
             // 同期履歴を記録
             logger.finishSuccess(result: result)

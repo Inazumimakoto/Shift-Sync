@@ -53,6 +53,12 @@
     </array>
     
     <!-- Privacy Descriptions -->
+    <key>NSAlarmKitUsageDescription</key>
+    <string>19:45退勤のシフトがある日にアラームを鳴らし、打刻忘れを防ぎます。消音モード中も音が鳴ります。</string>
+    <key>FirebaseAppDelegateProxyEnabled</key>
+    <false/>
+    <key>FirebaseMessagingAutoInitEnabled</key>
+    <false/>
     <key>NSCalendarsUsageDescription</key>
     <string>シフトをカレンダーに登録するためにアクセスが必要です。</string>
     <key>NSCalendarsFullAccessUsageDescription</key>

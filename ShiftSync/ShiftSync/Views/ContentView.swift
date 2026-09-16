@@ -49,6 +49,7 @@ enum SettingsScrollTarget: Hashable {
 
 struct ContentView: View {
     @EnvironmentObject var appState: AppState
+    @ObservedObject private var router = AppRouter.shared
     @AppStorage(LaunchDestination.storageKey) private var launchDestinationRawValue = LaunchDestination.shifts.rawValue
     @AppStorage(AppPreferenceKeys.hasCompletedInitialSetup) private var hasCompletedInitialSetup = false
 
@@ -62,6 +63,12 @@ struct ContentView: View {
     @State private var syncError: String?
     @State private var syncErrorRequiresReLogin = false
     @State private var shouldSyncAfterShiftWebLogin = false
+    @State private var featurePresentation: FeaturePresentation?
+    @State private var didInitializeLaunch = false
+    @State private var startedInitialSetupThisLaunch = false
+    @State private var isHandlingTimecardRoute = false
+    @State private var returnToTimecardAfterLogin = false
+    @State private var timecardReloadID = UUID()
     
     var body: some View {
         NavigationStack {
@@ -72,9 +79,13 @@ struct ContentView: View {
                         Label(LaunchDestination.shifts.tabLabel, systemImage: LaunchDestination.shifts.systemImage)
                     }
 
-                TimecardPageView {
-                    openLaunchDestinationSettings()
-                }
+                TimecardPageView(
+                    reloadID: timecardReloadID,
+                    suppressGuide: isHandlingTimecardRoute || showingSetup || showingSettings
+                        || showingShiftWebLogin || featurePresentation != nil || selectedTab != .timecard,
+                    onOpenLaunchDestinationSettings: openLaunchDestinationSettings,
+                    onRequestLogin: requestTimecardLogin
+                )
                     .tag(LaunchDestination.timecard)
                     .tabItem {
                         Label(LaunchDestination.timecard.tabLabel, systemImage: LaunchDestination.timecard.systemImage)
@@ -96,35 +107,65 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingSettings, onDismiss: {
                 settingsScrollTarget = nil
+                if selectedTab == .timecard { timecardReloadID = UUID() }
+                processPendingRoute()
             }) {
                 SettingsView(initialScrollTarget: settingsScrollTarget)
             }
-            .sheet(isPresented: $showingShiftWebLogin) {
+            .sheet(isPresented: $showingShiftWebLogin, onDismiss: {
+                processPendingRoute()
+            }) {
                 ShiftWebLoginView { success in
                     handleShiftWebLoginCompletion(success: success)
                 }
             }
-            .fullScreenCover(isPresented: $showingSetup) {
+            .sheet(item: $featurePresentation, onDismiss: {
+                if selectedTab == .timecard { timecardReloadID = UUID() }
+                processPendingRoute()
+            }) { presentation in
+                switch presentation {
+                case .introduction:
+                    FeatureIntroductionView()
+                case .announcement(let announcement):
+                    AnnouncementDetailView(announcement: announcement)
+                }
+            }
+            .fullScreenCover(isPresented: $showingSetup, onDismiss: {
+                processPendingRoute()
+            }) {
                 SetupView()
             }
             .onAppear {
-                applyInitialTabIfNeeded()
-                migrateInitialSetupStateIfNeeded()
-                loadShiftsFromStorage()
-                if !hasCompletedInitialSetup {
-                    showingSetup = true
-                } else if appState.isLoggedIn {
-                    // 1時間以上経過していたら自動同期
+                initializeLaunchIfNeeded()
+            }
+            .task {
+                // Let cold-start notification and App Intent routes arrive before
+                // presenting optional guidance or the normal launch sync alert.
+                try? await Task.sleep(for: .milliseconds(350))
+                guard !Task.isCancelled else { return }
+                processPendingRoute()
+                presentIntroductionForNormalLaunchIfNeeded()
+                if appState.isLoggedIn && !isHandlingTimecardRoute && !showingSetup
+                    && !showingShiftWebLogin && !showingSettings && featurePresentation == nil {
                     autoSyncIfNeeded()
                 }
+            }
+            .onReceive(router.$pendingRoute) { route in
+                guard route != nil, didInitializeLaunch else { return }
+                // Published values are delivered before their stored value changes.
+                Task { @MainActor in processPendingRoute() }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
                 // バックグラウンドから戻った時にシフトを再読み込み
                 loadShiftsFromStorage()
             }
             .onChange(of: launchDestinationRawValue) { _, newValue in
+                guard !isHandlingTimecardRoute else { return }
                 guard let destination = LaunchDestination(rawValue: newValue) else { return }
                 selectedTab = destination
+            }
+            .onChange(of: selectedTab) { _, tab in
+                if tab == .shifts { isHandlingTimecardRoute = false }
             }
             .alert("同期エラー", isPresented: .constant(syncError != nil)) {
                 if syncErrorRequiresReLogin {
@@ -291,6 +332,77 @@ struct ContentView: View {
     
     // MARK: - Actions
 
+    private func initializeLaunchIfNeeded() {
+        guard !didInitializeLaunch else { return }
+        migrateInitialSetupStateIfNeeded()
+        loadShiftsFromStorage()
+        applyInitialTabIfNeeded()
+        didInitializeLaunch = true
+        if !hasCompletedInitialSetup {
+            startedInitialSetupThisLaunch = true
+            showingSetup = true
+        }
+        processPendingRoute()
+    }
+
+    private func presentIntroductionForNormalLaunchIfNeeded() {
+        guard hasCompletedInitialSetup,
+              !startedInitialSetupThisLaunch,
+              !showingSetup, !showingSettings, !showingShiftWebLogin,
+              !isHandlingTimecardRoute,
+              router.pendingRoute == nil,
+              featurePresentation == nil,
+              !UserDefaults.standard.bool(forKey: FeatureIntroduction.seenKey) else { return }
+        featurePresentation = .introduction
+    }
+
+    private func processPendingRoute() {
+        guard let route = router.pendingRoute else { return }
+        if case .timecard = route {
+            isHandlingTimecardRoute = true
+            selectedTab = .timecard
+            syncError = nil
+            syncErrorRequiresReLogin = false
+            shouldSyncAfterShiftWebLogin = false
+        }
+        guard didInitializeLaunch, hasCompletedInitialSetup, !showingSetup else { return }
+        if showingSettings {
+            showingSettings = false
+            return
+        }
+        if featurePresentation != nil {
+            featurePresentation = nil
+            return
+        }
+        if showingShiftWebLogin {
+            if case .timecard = route {
+                returnToTimecardAfterLogin = true
+                router.consumePendingRoute()
+            }
+            return
+        }
+        router.consumePendingRoute()
+        switch route {
+        case .timecard:
+            timecardReloadID = UUID()
+            if !appState.isLoggedIn { requestTimecardLogin() }
+        case .featureIntroduction:
+            featurePresentation = .introduction
+        case .announcement(let announcement):
+            featurePresentation = .announcement(announcement)
+        }
+    }
+
+    private func requestTimecardLogin() {
+        guard selectedTab == .timecard, !showingShiftWebLogin,
+              !showingSetup, !showingSettings, featurePresentation == nil else { return }
+        returnToTimecardAfterLogin = true
+        shouldSyncAfterShiftWebLogin = false
+        appState.isLoggedIn = false
+        syncError = nil
+        showingShiftWebLogin = true
+    }
+
     private func applyInitialTabIfNeeded() {
         guard !didApplyInitialTab else { return }
         selectedTab = LaunchDestination(rawValue: launchDestinationRawValue) ?? .shifts
@@ -359,8 +471,11 @@ struct ContentView: View {
             } catch {
                 await MainActor.run {
                     isSyncing = false
-                    if let shiftWebError = error as? ShiftWebError, shiftWebError.requiresReauthentication {
-                        presentReLoginAlert(message: shiftWebError.localizedDescription ?? defaultReLoginErrorMessage)
+                    if isHandlingTimecardRoute {
+                        // The web session owns reauthentication during an alarm route.
+                        return
+                    } else if let shiftWebError = error as? ShiftWebError, shiftWebError.requiresReauthentication {
+                        presentReLoginAlert(message: shiftWebError.localizedDescription)
                     } else {
                         syncError = error.localizedDescription
                         syncErrorRequiresReLogin = false
@@ -412,10 +527,20 @@ struct ContentView: View {
     private func handleShiftWebLoginCompletion(success: Bool) {
         let shouldRetry = shouldSyncAfterShiftWebLogin
         shouldSyncAfterShiftWebLogin = false
+        let shouldOpenTimecard = returnToTimecardAfterLogin || isHandlingTimecardRoute
+        returnToTimecardAfterLogin = false
 
         guard success else { return }
 
         appState.isLoggedIn = true
+        appState.shifts = SharedStorage.loadShifts()
+        appState.lastSyncDate = SharedStorage.loadLastSyncDate()
+
+        if shouldOpenTimecard {
+            selectedTab = .timecard
+            timecardReloadID = UUID()
+            return
+        }
 
         if shouldRetry {
             performSync(source: .reloginRetry)
@@ -465,9 +590,11 @@ struct TimecardPageView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var showingTimecardGuideBanner = false
-    @State private var timecardGuideTask: Task<Void, Never>?
 
+    let reloadID: UUID
+    let suppressGuide: Bool
     let onOpenLaunchDestinationSettings: () -> Void
+    let onRequestLogin: () -> Void
 
     var body: some View {
         ZStack {
@@ -477,8 +604,10 @@ struct TimecardPageView: View {
             if appState.isLoggedIn {
                 TimecardWebView(
                     isLoading: $isLoading,
-                    errorMessage: $errorMessage
+                    errorMessage: $errorMessage,
+                    onRequiresLogin: onRequestLogin
                 )
+                .id(reloadID)
                 .ignoresSafeArea(edges: [.top, .bottom])
             } else {
                 VStack(spacing: 12) {
@@ -490,6 +619,8 @@ struct TimecardPageView: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
+                    Button("ログインして打刻ページを開く", action: onRequestLogin)
+                        .buttonStyle(.borderedProminent)
                 }
             }
 
@@ -521,27 +652,24 @@ struct TimecardPageView: View {
         } message: {
             Text(errorMessage ?? "")
         }
-        .onAppear {
-            scheduleTimecardGuideIfNeeded()
+        .task(id: suppressGuide) {
+            await showTimecardGuideIfNeeded()
         }
-        .onDisappear {
-            timecardGuideTask?.cancel()
-            timecardGuideTask = nil
+        .onChange(of: suppressGuide) { _, suppress in
+            if suppress {
+                showingTimecardGuideBanner = false
+            }
         }
     }
 
-    private func scheduleTimecardGuideIfNeeded() {
-        guard !hasSeenTimecardGuide, timecardGuideTask == nil else { return }
+    private func showTimecardGuideIfNeeded() async {
+        guard !suppressGuide, !hasSeenTimecardGuide else { return }
+        try? await Task.sleep(for: .milliseconds(1_500))
+        guard !Task.isCancelled, !suppressGuide, !hasSeenTimecardGuide else { return }
 
-        timecardGuideTask = Task { @MainActor in
-            defer { timecardGuideTask = nil }
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
-            guard !Task.isCancelled, !hasSeenTimecardGuide else { return }
-
-            hasSeenTimecardGuide = true
-            withAnimation(.easeInOut(duration: 0.25)) {
-                showingTimecardGuideBanner = true
-            }
+        hasSeenTimecardGuide = true
+        withAnimation(.easeInOut(duration: 0.25)) {
+            showingTimecardGuideBanner = true
         }
     }
 
@@ -605,6 +733,7 @@ private struct TimecardGuideBanner: View {
 struct TimecardWebView: UIViewRepresentable {
     @Binding var isLoading: Bool
     @Binding var errorMessage: String?
+    let onRequiresLogin: () -> Void
 
     let timecardURL = URL(string: "https://ams-app.club/timecard.php")!
 
@@ -652,18 +781,17 @@ struct TimecardWebView: UIViewRepresentable {
             parent.isLoading = false
 
             guard let url = webView.url else { return }
-            let absoluteURL = url.absoluteString
-
-            if absoluteURL.contains("login.php") {
+            guard url.host == "ams-app.club" else { return }
+            if url.path == "/login.php" || url.path == "/login" {
                 attemptAutoLogin(webView)
                 return
             }
 
-            if absoluteURL.contains("timecard.php") {
+            if url.path == "/timecard.php" {
                 return
             }
 
-            if absoluteURL.contains("ams-app.club"), !didForceOpenTimecardAfterLogin {
+            if !didForceOpenTimecardAfterLogin {
                 didForceOpenTimecardAfterLogin = true
                 webView.load(URLRequest(url: parent.timecardURL))
             }
@@ -681,12 +809,12 @@ struct TimecardWebView: UIViewRepresentable {
 
         private func attemptAutoLogin(_ webView: WKWebView) {
             guard autoLoginAttempts < maxAutoLoginAttempts else {
-                parent.errorMessage = "自動ログインに失敗しました。設定からShiftWebに再ログインしてください。"
+                parent.onRequiresLogin()
                 return
             }
 
             guard let credentials = try? KeychainService.shared.getShiftWebCredentials() else {
-                parent.errorMessage = "キーチェーンにShiftWebのID/PASSが見つかりません。"
+                parent.onRequiresLogin()
                 return
             }
 
@@ -725,9 +853,11 @@ struct TimecardWebView: UIViewRepresentable {
             })();
             """
 
-            webView.evaluateJavaScript(script) { _, error in
+            webView.evaluateJavaScript(script) { result, error in
                 if let error = error {
                     self.parent.errorMessage = "自動ログインに失敗しました: \(error.localizedDescription)"
+                } else if let result = result as? String, result == "fields_not_found" || result == "submit_not_found" {
+                    self.parent.onRequiresLogin()
                 }
             }
         }

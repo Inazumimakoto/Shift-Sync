@@ -100,7 +100,7 @@ Custom dataには配信ごとの `announcementID`（例：`release-1945-alarm-00
 
 ### 利用者への本番配信
 
-1. プッシュ対応を含む1.2.5（ビルド14）をXcodeでArchiveし、App Store ConnectへアップロードしてTestFlightで配布します。Gitのコミット・プッシュ・タグ作成だけではTestFlightに配布されません。
+1. プッシュ対応を含む1.3.0（ビルド14）をXcodeでArchiveし、App Store ConnectへアップロードしてTestFlightで配布します。Gitのコミット・プッシュ・タグ作成だけではTestFlightに配布されません。
 2. 利用者にはTestFlightで更新し、通知を許可した状態で一度アプリを開いてもらいます。オンラインでFCM登録と本番トピック購読が完了した端末が配信対象になります。
 3. まず自分のTestFlight版で本番APNsの受信・通知タップを確認します。開発版での受信確認とは環境が異なります。
 4. Firebase ConsoleのMessagingでキャンペーンを作成（既存のテストから複製も可能）し、対象トピックを `shiftsync-announcements-prod` に設定して配信します。Debug向けトピックのまま送らないでください。
